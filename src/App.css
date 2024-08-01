@@ -1,0 +1,37 @@
+.tablist:active{
+    background: yellow !important;
+}
+
+.table-content th, .table-content td {
+    color: white;
+}
+.table-content td {
+    border:none;
+    padding-bottom: 1px;
+}
+
+#start{
+    text-align: start !important;
+}
+
+#end{
+    text-align: end !important;
+}
+
+#radius{
+    border: 3px solid #F8AD18;
+
+}
+
+#boton{
+    background: transparent !important;
+    color: white;
+}
+
+.radio{
+    border-radius: 20px !important;
+}
+
+#espacio{
+    padding-bottom: 5px !important;
+}
