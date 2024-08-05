@@ -20,6 +20,7 @@ jobs:
             git clone https://github.com/Guardian-Protocol/guardian-protocol-vite-version.git
             cd guardian-protocol-vite-version
             npm install
+            echo ${{ secrets.ENV }} > .env
             npm run build
             cd ..
             sudo rm -rf /httpdocs/*
