@@ -20,7 +20,7 @@ jobs:
           node-version: '20.9.0'
 
       - name: install yarn
-        run: npm install -g corepack && corepack enable --install-directory ~/.volta/bin && yarn set version 4.0.1
+        run: npm install -g corepack && corepack enable && yarn set version 4.0.1
 
       - name: install dependencies
         run: yarn install
