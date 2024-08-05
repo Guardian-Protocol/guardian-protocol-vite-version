@@ -19,7 +19,7 @@ jobs:
           script: |
             git clone https://github.com/Guardian-Protocol/guardian-protocol-vite-version.git
             cd guardian-protocol-vite-version
-            npm install
+            yarn
             echo ${{ secrets.ENV }} > .env
             npm run build
             cd ..
