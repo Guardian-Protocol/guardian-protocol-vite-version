@@ -22,6 +22,9 @@ jobs:
       - name: install yarn
         run: npm install -g yarn
 
+      - name: where am I
+        run: pwd
+
       - name: install dependencies
         run: yarn install --immutable
 
