@@ -37,8 +37,6 @@ jobs:
           server: ${{ secrets.HOST }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          retries: 2
-          port: 21
           protocol: sftp
           local-dir: build/
           server-dir: httpdocs/
