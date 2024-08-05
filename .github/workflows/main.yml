@@ -32,11 +32,13 @@ jobs:
         run: npm run build
 
       - name: upload to server
-        uses: SamKirkland/FTP-Deploy-Action@4.0.0
+        uses: SamKirkland/FTP-Deploy-Action@4.3.5
         with:
           server: ${{ secrets.HOST }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
+          retries: 2
           port: 21
+          protocol: sftp
           local-dir: build/
           server-dir: httpdocs/
