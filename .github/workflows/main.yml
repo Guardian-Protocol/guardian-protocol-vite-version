@@ -37,6 +37,6 @@ jobs:
           server: ${{ secrets.HOST }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./build
-          remote-dir: ./httpdocs
+          local-dir: build/
+          remote-dir: httpdocs/
           exclude: .gitignore
