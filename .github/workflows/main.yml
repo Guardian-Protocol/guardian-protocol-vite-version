@@ -1,3 +1,5 @@
+name: deploy action
+
 on:
   push:
     branches:
@@ -9,6 +11,9 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
+      - name: install yarn
+        run: echo ${{ secrets.SUDO }} | sudo -S apt-get install -y yarn
+
       - name: Login to server
         uses: appleboy/ssh-action@v1.0.3
         with:
