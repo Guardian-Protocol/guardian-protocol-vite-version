@@ -20,13 +20,10 @@ jobs:
           node-version: '20.9.0'
 
       - name: install yarn
-        run: npm install -g yarn
-
-      - name: where am I
-        run: pwd && ls -la
+        run: npm install -g yarn@1.22.22
 
       - name: install dependencies
-        run: yarn install --immutable
+        run: yarn install
 
       - name: create env
         run: echo ${{ secrets.ENV }} > .env
