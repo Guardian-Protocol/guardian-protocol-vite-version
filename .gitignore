@@ -20,6 +20,8 @@ node_modules
 build
 dist
 
+yarn.lock
+
 # misc
 .DS_Store
 
