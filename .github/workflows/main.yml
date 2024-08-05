@@ -1,1 +1,27 @@
+on:
+  push:
+    branches:
+      - main
 
+jobs:
+  my_job:
+    name: deploy to staging
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Login to server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          password: ${{ secrets.PASSWORD }}
+          port: ${{ secrets.PORT }}
+          script: |
+            git clone https://github.com/Guardian-Protocol/guardian-protocol-vite-version.git
+            cd guardian-protocol-vite-version
+            npm install
+            npm run build
+            cd ..
+            sudo rm -rf /httpdocs/*
+            sudo cp -r guardian-protocol-vite-version/dist/* /httpdocs/
+            sudo rm -rf guardian-protocol-vite-version
