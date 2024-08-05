@@ -20,7 +20,7 @@ jobs:
           node-version: '20.9.0'
 
       - name: install yarn
-        run: npm install -g yarn@1.22.22
+        run: npm install -g yarn@4.0.1
 
       - name: install dependencies
         run: yarn install
