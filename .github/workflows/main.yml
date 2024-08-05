@@ -31,28 +31,12 @@ jobs:
       - name: build
         run: npm run build
 
-      - name: compress
-        run: tar -czvf build.tar.gz build
-
       - name: upload to server
         uses: SamKirkland/FTP-Deploy-Action@4.0.0
         with:
           server: ${{ secrets.HOST }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: ./build.tar.gz
-          remote-dir: /
+          local-dir: ./build
+          remote-dir: ./httpdocs
           exclude: .gitignore
-
-      - name: connect to ssh
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          password: ${{ secrets.PASSWORD }}
-          port: ${{ secrets.PORT }}
-          script: |
-            tar -xzvf build.tar.gz
-            rm -rf build.tar.gz
-            cp -r build/* /httpdocs
-            exit
