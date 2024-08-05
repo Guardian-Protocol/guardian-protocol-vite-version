@@ -23,7 +23,7 @@ jobs:
         run: npm install -g yarn
 
       - name: install dependencies
-        run: yarn install
+        run: yarn install --immutable
 
       - name: create env
         run: echo ${{ secrets.ENV }} > .env
@@ -44,11 +44,6 @@ jobs:
           remote-dir: /
           exclude: .gitignore
 
-  deploy:
-    name: Build and Deploy
-    runs-on: ubuntu-22.04
-
-    steps:
       - name: connect to ssh
         uses: appleboy/ssh-action@v1.0.3
         with:
