@@ -32,4 +32,11 @@ jobs:
         run: npm run build
 
       - name: upload to server
-        run: npx ftp-deploy --server ${{ secrets.HOST }} --username ${{ secrets.FTP_USERNAME }} --password ${{ secrets.FTP_PASSWORD }} --local-dir build/ --remote-dir httpdocs/ --exclude .gitignore
+        uses: SamKirkland/FTP-Deploy-Action@4.0.0
+        with:
+          server: ${{ secrets.HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          port: 21
+          local-dir: build/
+          server-dir: httpdocs/
