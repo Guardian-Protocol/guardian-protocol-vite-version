@@ -6,12 +6,50 @@ on:
       - main
 
 jobs:
-  my_job:
-    name: deploy to staging
+  build:
+    name: Build and Deploy
     runs-on: ubuntu-22.04
 
     steps:
-      - name: Login to server
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: '20.9.0'
+
+      - name: install yarn
+        run: npm install -g yarn
+
+      - name: install dependencies
+        run: yarn install
+
+      - name: create env
+        run: echo ${{ secrets.ENV }} > .env
+
+      - name: build
+        run: yarn build
+
+      - name: compress
+        run: tar -czvf build.tar.gz build
+
+      - name: upload to server
+        uses: SamKirkland/FTP-Deploy-Action@4.0.0
+        with:
+          server: ${{ secrets.HOST }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./build.tar.gz
+          remote-dir: /
+          exclude: .gitignore
+
+  deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: connect to ssh
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.HOST }}
@@ -19,12 +57,7 @@ jobs:
           password: ${{ secrets.PASSWORD }}
           port: ${{ secrets.PORT }}
           script: |
-            git clone https://github.com/Guardian-Protocol/guardian-protocol-vite-version.git
-            cd guardian-protocol-vite-version
-            npm i -f
-            echo ${{ secrets.ENV }} > .env
-            npm run build
-            cd ..
-            sudo rm -rf /httpdocs/*
-            sudo cp -r guardian-protocol-vite-version/dist/* /httpdocs/
-            sudo rm -rf guardian-protocol-vite-version
+            tar -xzvf build.tar.gz
+            rm -rf build.tar.gz
+            cp -r build/* /httpdocs
+            exit
