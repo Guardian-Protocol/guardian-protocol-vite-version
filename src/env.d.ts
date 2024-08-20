@@ -2,6 +2,7 @@ interface ImportMetaEnv {
   readonly VITE_NODE_ADDRESS: string;
   readonly VITE_CONTRACT_ADDRESS: string;
   readonly VITE_FT_CONTRACT_ADDRESS: string;
+  readonly VITE_STORE_ADDRESS: string;
 
   readonly VITE_CONTRACT_METADATA: string;
   readonly VITE_FT_CONTRACT_METADATA: string;

@@ -22,6 +22,7 @@ import VaraLogo from "@/assets/images/icons/ava-vara-black.svg";
 import Advertencia from '@/assets/images/icons/advertencia.svg';
 import {useBalance, useBalanceFormat} from "@gear-js/react-hooks";
 import {AccountsModal} from "@/features/multiwallet/ui/accounts-modal";
+import { formatDate } from "@/utils/date";
 
 type StakeProps = {
     account: any;
@@ -49,20 +50,26 @@ export function Stake({account, isModalOpen, openModal, closeModal, accounts, co
     };
 
     const stakeVara = async () => {
-        if (BigInt(stakeAmount) > Math.floor(Number(formattedBalance?.value)) - 1 || BigInt(stakeAmount) <= 0) {
+        if (Number(stakeAmount) > Math.floor(Number(formattedBalance?.value)) - 1 || Number(stakeAmount) <= 0) {
             setIsAmountInvalid(true);
             return;
         }
+
+        const stakeValue = Number(stakeAmount) * contract.plat;
+
         const payload: AnyJson = {
-            stake: Number(stakeAmount)
+            Stake: [
+                stakeValue,
+                formatDate(new Date())
+            ]
         }
-        await contract.stake(payload, Number(stakeAmount), gas)
+        await contract.stake(payload, stakeValue, gas)
     }
 
     useEffect(() => {
-        contract.getLockedBalance().then((gBalance) => {
+        contract.balanceOf().then((gBalance) => {
             setLockedBalance(gBalance)
-        })
+        })        
     }, [contract, balance]);
 
     return (

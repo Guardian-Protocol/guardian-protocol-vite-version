@@ -91,7 +91,7 @@ export function Withdraw({contractCalls, account}: WithdrawProps) {
                                 </Flex>
                                 <Flex direction="column" alignItems="flex-end">
                                     <Flex align="center">
-                                        <Text fontSize="lg" fontWeight="bold">{history?.amount}</Text>
+                                        <Text fontSize="lg" fontWeight="bold">{history?.amount / contractCalls.plat}</Text>
                                         <Image src={VaraLogo} boxSize="40px" ml={2} />
                                     </Flex>
                                     <Flex align="center">

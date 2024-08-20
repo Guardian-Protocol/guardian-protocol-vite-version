@@ -23,6 +23,7 @@ import VaraLogo from "@/assets/images/VaraLogo.png";
 import Advertencia from "@/assets/images/icons/advertencia.svg";
 import {useBalance} from "@gear-js/react-hooks";
 import {AccountsModal} from "@/features/multiwallet/ui/accounts-modal";
+import { formatDate } from "@/utils/date";
 
 type UnstakeProps = {
     account: any;
@@ -43,7 +44,7 @@ export function Unstake({openModal, closeModal, account, accounts, isModalOpen, 
 
     const maxAmountVaraUnstake = () => {
         if (gvaraValance > 0) {
-            setUnstakeAmount(String(Math.floor(Number(gvaraValance))));
+            setUnstakeAmount(String(Number(gvaraValance)));
             setApproveGas(0.6 * 100000000000)
         }
     };
@@ -51,10 +52,8 @@ export function Unstake({openModal, closeModal, account, accounts, isModalOpen, 
     const getBalance = useCallback(async () => {
         contractCalls.balanceOf().then((balance) => {
             setGvaraBalance(balance);
+            setLockedBalance(balance);
         })
-
-        const balance = await contractCalls.getLockedBalance();
-        setLockedBalance(balance);
     }, [contractCalls])
 
     const unstakeVara = async () => {
@@ -63,15 +62,19 @@ export function Unstake({openModal, closeModal, account, accounts, isModalOpen, 
             return;
         }
 
+        // FETCH TOKEN VALUE
+        const tokenValue = await contractCalls.tokenValue();
+        const unstakeValue = (Number(unstakeAmount) * (tokenValue / contractCalls.plat)) * contractCalls.plat;
+
         const payload: AnyJson = {
-            Unestake: {
-                amount: Number(unstakeAmount),
+            Unstake: {
+                amount: unstakeValue,
+                date: formatDate(new Date()),
                 liberationEra: await contractCalls.getCurrentEra() + 14,
-                liberationDays: 7
             }
         }
 
-        await contractCalls.unstake(payload, 0, Number(unstakeAmount));
+        await contractCalls.unstake(payload, 0, unstakeValue);
     }
 
     useEffect(() => {
@@ -155,7 +158,7 @@ export function Unstake({openModal, closeModal, account, accounts, isModalOpen, 
                                                 } else {
                                                     setUnstakeAmount(value);
                                                 }
-                                                setApproveGas(0.6 * 1000000000000)
+                                                setApproveGas(0.6 * contractCalls.plat)
                                                 setIsAmountInvalid(false);
                                             }
                                             if (Number(value) === 0) {

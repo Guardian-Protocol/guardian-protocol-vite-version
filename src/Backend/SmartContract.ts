@@ -8,6 +8,8 @@ type address = `0x${string}`
 type promiseXt = Promise<SubmittableExtrinsic | null>
 
 export class SmartContract {
+    public readonly plat: number = 1000000000000;
+
     private api: GearApi;
 
     // noinspection TypeScriptFieldCanBeMadeReadonly
@@ -24,6 +26,7 @@ export class SmartContract {
     private readonly ftSource: address;
     private readonly ftMetadata: ProgramMetadata;
 
+    private readonly storeSource: address;
     private readonly storeMetadata: ProgramMetadata;
 
     private readonly alertStyle = {
@@ -44,7 +47,7 @@ export class SmartContract {
         this.accounts = accounts;
         this.alert = alert;
 
-        const { seed } = GearKeyring.generateSeed(import.meta.env.VITE_ADMIN_NMONIC as address)
+        const { seed } = GearKeyring.generateSeed(import.meta.env.VITE_ADMIN_NMONIC as address);
         this.admin = seed
 
         this.stash = import.meta.env.VITE_STASH_ADDRESS as address;
@@ -55,14 +58,16 @@ export class SmartContract {
         this.ftSource = import.meta.env.VITE_FT_CONTRACT_ADDRESS as address;
         this.ftMetadata = ProgramMetadata.from(import.meta.env.VITE_FT_CONTRACT_METADATA as address);
 
-        this.storeMetadata = ProgramMetadata.from(import.meta.env.VITE_STORE_METADATA as address)
+        this.storeSource = import.meta.env.VITE_STORE_ADDRESS as address;
+        this.storeMetadata = ProgramMetadata.from(import.meta.env.VITE_STORE_METADATA as address);
     }
 
     public async stake(payload: AnyJson, value: number, gasLimit: number) {
         const stakeMessage = await this.contractMessage(payload, value, gasLimit);
 
         await this.signer(stakeMessage!, async () => {
-            const stakeTX = this.api.tx.staking.bondExtra(value * 1000000000000)
+            console.log("stake:" + (value * this.plat))
+            const stakeTX = this.api.tx.staking.bondExtra((value))
             const proxyTX = this.api.tx.proxy.proxy(this.stash, null, stakeTX);
             await this.proxySigner(proxyTX, () => {
                 this.alert.success("SUCCESSFUL TRANSACTION", {style: this.alertStyle})
@@ -71,17 +76,14 @@ export class SmartContract {
     }
 
     public async unstake(payload: AnyJson, value: number, amount: number) {
-        const approveMessage = await this.approveTokensMessage(amount, 0.6 * 1000000000000)
-        const unstakeMessage = await this.contractMessage(payload, value, 0.6 * 1000000000000);
+        const unstakeMessage = await this.contractMessage(payload, value, 0.6 * this.plat);
 
-        await this.signer(approveMessage!, async () => {
-            await this.signer(unstakeMessage!, async () => {
-                const unboundTX = this.api.tx.staking.unbond(amount * 1000000000000);
-                const proxyTX = this.api.tx.proxy.proxy(this.stash, null, unboundTX);
-                await this.proxySigner(proxyTX, () => {
-                    this.alert.success("SUCCESSFUL TRANSACTION", {style: this.alertStyle})
-                })
-            });
+        await this.signer(unstakeMessage!, async () => {
+            const unboundTX = this.api.tx.staking.unbond(amount);
+            const proxyTX = this.api.tx.proxy.proxy(this.stash, null, unboundTX);
+            await this.proxySigner(proxyTX, () => {
+                this.alert.success("SUCCESSFUL TRANSACTION", {style: this.alertStyle})
+            })
         });
     }
 
@@ -95,14 +97,14 @@ export class SmartContract {
             ]
         }
 
-        const withdrawMessage = await this.contractMessage(payload, 0, 0.06 * 1000000000000)
+        const withdrawMessage = await this.contractMessage(payload, 0, 0.06 * this.plat);
 
         await this.signer(withdrawMessage!, async () => {
             if (currentEra >= liberationEra) {
                 const withdrawTX = this.api.tx.staking.withdrawUnbonded(0);
                 const proxyTX = this.api.tx.proxy.proxy(this.stash, null, withdrawTX);
                 await this.proxySigner(proxyTX, async () => {
-                    const transferMessage = this.api.tx.balances.transferKeepAlive(this.account?.decodedAddress!, amount * 1000000000000);
+                    const transferMessage = this.api.tx.balances.transferKeepAlive(this.account?.decodedAddress!, amount / this.plat);
                     const transferTX = this.api.tx.proxy.proxy(this.stash, null, transferMessage);
                     await this.proxySigner(transferTX, () => {
                         this.alert.success("SUCCESSFUL TRANSACTION", {style: this.alertStyle})
@@ -115,18 +117,13 @@ export class SmartContract {
     }
 
     public async getHistory() {
-        const result = (await this.getState({ GetTransactionHistory: this.account?.decodedAddress }));
-        return result === 0 ? 0 : result.transactionHistory;
+        const result = (await this.getState({ TransactionsOf: this.account?.decodedAddress }));
+        return result === 0 ? 0 : result.asTransactions.toJSON();
     }
 
     public async getUnstakeHistory() {
-        const result = (await this.getState({ GetUnestakeHistory: this.account?.decodedAddress }));
-        return result === 0 ? 0 : result.unestakeHistory;
-    }
-
-    public async getLockedBalance() {
-        const result = (await this.getState({ GetUserVaraLocked: this.account?.decodedAddress }));
-        return result === 0 ? 0 : result.userVaraLocked;
+        const result = (await this.getState({ UnstakesOf: this.account?.decodedAddress }));
+        return result === 0 ? 0 : result.asUnstakes.toJSON();
     }
 
     public async getCurrentEra(): Promise<number> {
@@ -136,32 +133,36 @@ export class SmartContract {
 
     public async balanceOf() {
         const result = await this.getFTState();
-        return result.toNumber()
-    }
-
-    private async getState(payload: AnyJson = {}) {
-        const store = await this.api?.programState.read({
-            programId: this.source,
-            payload: {
-                GetUserStore: this.account?.decodedAddress,
-            },
-        }, this.metadata);
-
-        if ((store as any).isErr) {
+        
+        if (result === 0) {
             return 0;
         }
 
+        console.log(this.account?.decodedAddress)
+
+        return result.toNumber() / this.plat;
+    }
+
+    public async tokenValue() { 
+        const state = await this.api.programState.read({
+            programId: this.source,
+            payload: "0x00"
+        }, this.metadata);
+
+        return (state.toJSON() as any).liquidInfo.tokenValue;
+    }
+
+    private async getState(payload: AnyJson = {}) {
         const state = await this.api?.programState.read({
-            programId: (store as any).toJSON().ok.userStore,
+            programId: this.storeSource,
             payload,
         }, this.storeMetadata);
 
         if ((state as any).isErr) {
-            this.alert.error((state as any).asErr.asUserNotFound, {style: this.alertStyle});
             return 0;
         }
 
-        return (state as any).toJSON().ok;
+        return (state as any).asOk;
     }
 
 
@@ -174,7 +175,11 @@ export class SmartContract {
                 }
             }, this.ftMetadata)
 
-            return (state as any).asBalance
+            if ((state as any).isErr) {
+                return 0;
+            }
+
+            return (state as any).asOk.asBalance
         } catch {}
     }
 
@@ -209,32 +214,11 @@ export class SmartContract {
             destination: this.source,
             payload,
             gasLimit: BigInt(gasLimit),
-            value: inputValue * 1000000000000
+            value: inputValue
         }
 
         if (this.validateAccount()) {
             return this.api.message.send(message, this.metadata)
-        }
-
-        return null;
-    }
-
-    private async approveTokensMessage(value: number, gasLimit: number): promiseXt {
-        const message = {
-            destination: this.ftSource,
-            payload: {
-                Approve: {
-                    tx_id: null,
-                    to: this.source,
-                    amount: value
-                }
-            },
-            gasLimit: BigInt(gasLimit),
-            value: 0
-        }
-
-        if (this.validateAccount()) {
-            return this.api.message.send(message, this.ftMetadata);
         }
 
         return null;

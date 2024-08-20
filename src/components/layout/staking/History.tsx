@@ -55,10 +55,13 @@ export function History({contractCalls}: HistoryProps) {
                                 </Flex>
                                 <Flex direction="column" alignItems="flex-end">
                                     <Flex align="center">
-                                        <Text fontSize="lg" fontWeight="bold">{history.amount}</Text>
+                                        <Text fontSize="lg" fontWeight="bold">{history.amount / contractCalls.plat}</Text>
                                         <Image src={VaraLogo} boxSize="40px" ml={2} />
                                     </Flex>
                                 </Flex>
+                            </Flex>
+                            <Flex align="center" w="30%" justifyContent="center">
+                                <Text fontSize="lg" fontWeight="bold">{history.date}</Text>
                             </Flex>
                             <Flex align="center" w="30%" justifyContent="center">
                                 {history.transactionType === "stake" ?
