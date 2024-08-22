@@ -66,7 +66,7 @@ export class SmartContract {
         const stakeMessage = await this.contractMessage(payload, value, gasLimit);
 
         await this.signer(stakeMessage!, async () => {
-            console.log("stake:" + (value * this.plat))
+            this.alert.info("transaction in progress please dont leave the page", {style: this.alertStyle})
             const stakeTX = this.api.tx.staking.bondExtra((value))
             const proxyTX = this.api.tx.proxy.proxy(this.stash, null, stakeTX);
             await this.proxySigner(proxyTX, () => {
@@ -79,6 +79,7 @@ export class SmartContract {
         const unstakeMessage = await this.contractMessage(payload, value, 0.6 * this.plat);
 
         await this.signer(unstakeMessage!, async () => {
+            this.alert.info("transaction in progress please dont leave the page", {style: this.alertStyle})
             const unboundTX = this.api.tx.staking.unbond(amount);
             const proxyTX = this.api.tx.proxy.proxy(this.stash, null, unboundTX);
             await this.proxySigner(proxyTX, () => {
@@ -101,6 +102,7 @@ export class SmartContract {
 
         await this.signer(withdrawMessage!, async () => {
             if (currentEra >= liberationEra) {
+                this.alert.info("transaction in progress please dont leave the page", {style: this.alertStyle})
                 const withdrawTX = this.api.tx.staking.withdrawUnbonded(0);
                 const proxyTX = this.api.tx.proxy.proxy(this.stash, null, withdrawTX);
                 await this.proxySigner(proxyTX, async () => {

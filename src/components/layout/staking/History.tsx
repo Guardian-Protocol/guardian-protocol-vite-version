@@ -64,7 +64,7 @@ export function History({contractCalls}: HistoryProps) {
                                 <Text fontSize="lg" fontWeight="bold">{history.date}</Text>
                             </Flex>
                             <Flex align="center" w="30%" justifyContent="center">
-                                {history.transactionType === "stake" ?
+                                {history.tType === "stake" ?
                                     (<Text fontSize="lg" fontWeight="bold">STAKE</Text>) : (<Text fontSize="lg" fontWeight="bold">UNSTAKE</Text>)
                                 }
                             </Flex>
