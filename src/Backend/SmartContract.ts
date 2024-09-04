@@ -67,7 +67,7 @@ export class SmartContract {
 
         await this.signer(stakeMessage!, async () => {
             this.alert.info("transaction in progress please dont leave the page", {style: this.alertStyle})
-            const stakeTX = this.api.tx.staking.bondExtra((value))
+            const stakeTX = this.api.tx.staking.bondExtra(value)
             const proxyTX = this.api.tx.proxy.proxy(this.stash, null, stakeTX);
             await this.proxySigner(proxyTX, () => {
                 this.alert.success("SUCCESSFUL TRANSACTION", {style: this.alertStyle})
