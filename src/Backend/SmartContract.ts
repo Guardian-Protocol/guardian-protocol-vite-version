@@ -1,4 +1,4 @@
-import {GearApi, GearKeyring, ProgramMetadata} from "@gear-js/api";
+import {GasInfo, GearApi, GearKeyring, ProgramMetadata} from "@gear-js/api";
 import {Account, AlertContainerFactory} from "@gear-js/react-hooks";
 import {SubmittableExtrinsic} from "@polkadot/api/promise/types";
 import {web3FromSource} from "@polkadot/extension-dapp";
@@ -62,8 +62,10 @@ export class SmartContract {
         this.storeMetadata = ProgramMetadata.from(import.meta.env.VITE_STORE_METADATA as address);
     }
 
-    public async stake(payload: AnyJson, value: number, gasLimit: number) {
-        const stakeMessage = await this.contractMessage(payload, value, gasLimit);
+    public toFixed4 = (value: number): number => parseFloat(value.toFixed(4));
+
+    public async stake(payload: AnyJson, value: number, amount: number, gasLimit: number) {
+        const stakeMessage = await this.contractMessage(payload, amount, gasLimit);
 
         await this.signer(stakeMessage!, async () => {
             this.alert.info("transaction in progress please dont leave the page", {style: this.alertStyle})
@@ -151,7 +153,31 @@ export class SmartContract {
             payload: "0x00"
         }, this.metadata);
 
+        console.log(state.toJSON())
+
         return (state.toJSON() as any).liquidInfo.tokenValue;
+    }
+
+    public async getGassLimit(payload: AnyJson, amount: number) {
+        const calculatedGas = await this.api.program.calculateGas.handle(
+            this.account?.decodedAddress!,
+            this.source,
+            payload,
+            amount,
+            false,
+            this.metadata
+        );
+
+        const gasToSpend = (gasInfo: GasInfo): bigint => {
+            const gasHuman = gasInfo.toHuman();
+            const minLimit = gasHuman.min_limit?.toString() ?? "0";
+            const parsedGas = Number(minLimit.replaceAll(',', ''));
+            const gasPlusTenPercent = Math.round(parsedGas + parsedGas * 0.10);
+            const gasLimit: bigint = BigInt(gasPlusTenPercent);
+            return gasLimit;
+        }        
+
+        return gasToSpend(calculatedGas);
     }
 
     private async getState(payload: AnyJson = {}) {
@@ -232,4 +258,5 @@ export class SmartContract {
             (visibleAccount: Account) => visibleAccount.address === localAccount?.address
         )
     }
+
 }

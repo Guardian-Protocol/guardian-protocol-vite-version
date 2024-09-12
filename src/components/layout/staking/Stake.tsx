@@ -41,13 +41,55 @@ export function Stake({account, isModalOpen, openModal, closeModal, accounts, co
     const [stakeAmount, setStakeAmount] = useState("0");
     const [gas, setGas] = useState(0);
     const [isAmountInvalid, setIsAmountInvalid] = useState(false);
+    const [valueAfterToken, setValueAfterToken] = useState(0);
 
-    const maxAmountVara = () => {
+    const maxAmountVara = async () => {
         if (Number(formattedBalance?.value) > 0 || formattedBalance?.value !== undefined) {
+            const amount = Math.floor(Number(formattedBalance?.value) - 1);
+
+            const tokenValue = await contract.tokenValue() / contract.plat;
+            setValueAfterToken(contract.toFixed4(amount / tokenValue));
+
+            const gas = await contract.getGassLimit({ 
+                Stake: [
+                    valueAfterToken * contract.plat, 
+                    formatDate(new Date())
+                ]
+            }, valueAfterToken * contract.plat);
+
             setStakeAmount(String(Math.floor(Number(formattedBalance?.value) - 1)));
-            setGas(0.6 * 100000000000)
+            setGas(Number(gas));
         }
     };
+
+    const handleVaraStakeInputChange = async (event: any) => {
+        const { value } = event.target;
+        if (!Number.isNaN(Number(value))) {
+            if (value.startsWith("0")) {
+                setStakeAmount(value.slice(1));
+            } else {
+                setStakeAmount(value);
+            }
+            setIsAmountInvalid(false);
+
+            const tokenValue = await contract.tokenValue() / contract.plat;
+            setValueAfterToken(contract.toFixed4(Number(value) / tokenValue));
+            
+            const amount = valueAfterToken * contract.plat;
+            const gas = await contract.getGassLimit({ 
+                Stake: [
+                    amount, 
+                    formatDate(new Date())
+                ] 
+            }, amount);
+
+            setGas(Number(gas));
+        }
+        if (value === "") {
+            setStakeAmount("0");
+            setGas(0);
+        }
+    }
 
     const stakeVara = async () => {
         if (Number(stakeAmount) > Math.floor(Number(formattedBalance?.value)) - 1 || Number(stakeAmount) <= 0) {
@@ -55,7 +97,9 @@ export function Stake({account, isModalOpen, openModal, closeModal, accounts, co
             return;
         }
 
-        const stakeValue = Number(stakeAmount) * contract.plat;
+        const stakeValue = valueAfterToken * contract.plat;
+        console.log(stakeValue)
+        console.log(Number(stakeValue) / contract.plat)
 
         const payload: AnyJson = {
             Stake: [
@@ -63,12 +107,12 @@ export function Stake({account, isModalOpen, openModal, closeModal, accounts, co
                 formatDate(new Date())
             ]
         }
-        await contract.stake(payload, stakeValue, gas)
+        await contract.stake(payload, stakeValue, Number(stakeAmount) * contract.plat, gas)
     }
 
     useEffect(() => {
         contract.balanceOf().then((gBalance) => {
-            setLockedBalance(gBalance)
+            setLockedBalance(contract.toFixed4(gBalance));
         })        
     }, [contract, balance]);
 
@@ -133,22 +177,7 @@ export function Stake({account, isModalOpen, openModal, closeModal, accounts, co
                                             borderColor: "#F8AD18",
                                         }}
                                         value={stakeAmount}
-                                        onChange={(event) => {
-                                            const { value } = event.target;
-                                            if (!Number.isNaN(Number(value))) {
-                                                if (value.startsWith("0")) {
-                                                    setStakeAmount(value.slice(1));
-                                                } else {
-                                                    setStakeAmount(value);
-                                                }
-                                                setIsAmountInvalid(false);
-                                                setGas(0.6 * 100000000000);
-                                            }
-                                            if (value === "") {
-                                                setStakeAmount("0")
-                                                setGas(0)
-                                            }
-                                        }}
+                                        onChange={handleVaraStakeInputChange}
                                         borderWidth="3px"
                                         display="flex"
                                         alignContent="center"
@@ -206,7 +235,7 @@ export function Stake({account, isModalOpen, openModal, closeModal, accounts, co
                                 style={{ color: "white" }}
                                 fontSize="18px"
                             >
-                                {stakeAmount} gVARA
+                                {valueAfterToken} gVARA
                             </Td>
                         </Grid>
 

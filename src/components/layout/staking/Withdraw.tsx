@@ -36,6 +36,7 @@ export function Withdraw({contractCalls, account}: WithdrawProps) {
                     setIsHistoryEmpty(true);
                 }
 
+                console.log(history)
                 setUnestakeHistory(history)
             }
         });

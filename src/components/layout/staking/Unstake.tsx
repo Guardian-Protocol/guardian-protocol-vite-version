@@ -41,17 +41,51 @@ export function Unstake({openModal, closeModal, account, accounts, isModalOpen, 
     const [gvaraValance, setGvaraBalance] = useState(0);
     const [lockedBalance, setLockedBalance] = useState(0)
     const [isAmountInvalid, setIsAmountInvalid] = useState(false);
+    const [valueAfterToken, setValueAfterToken] = useState(0);
 
-    const maxAmountVaraUnstake = () => {
+    const handleVaraUnstakeInputChange = async (event: any) => {
+        const { value } = event.target;
+        if (!Number.isNaN(Number(value))) {
+            if (value.startsWith("0")) {
+                setUnstakeAmount(value.slice(1));
+            } else {
+                setUnstakeAmount(value);
+            }
+
+            const tokenValue = await contractCalls.tokenValue();
+            const amount = (Number(value) * (tokenValue / contractCalls.plat));
+            setValueAfterToken(contractCalls.toFixed4(amount));
+            const amountUnstake = (Number(unstakeAmount) * (tokenValue / contractCalls.plat)) * contractCalls.plat;
+            const gas = await contractCalls.getGassLimit({ 
+                Unstake: {
+                    amount: amountUnstake,
+                    date: formatDate(new Date()),
+                    liberationEra: await contractCalls.getCurrentEra() + 14,
+                }
+            }, amountUnstake);
+            
+            setApproveGas(Number(gas))
+            setIsAmountInvalid(false);
+        }
+        if (Number(value) === 0) {
+            setUnstakeAmount("0")
+            setApproveGas(0)
+        }
+    }
+
+    const maxAmountVaraUnstake = async () => {
         if (gvaraValance > 0) {
             setUnstakeAmount(String(Number(gvaraValance)));
+            const tokenValue = await contractCalls.tokenValue();
+            const amount = (Number(gvaraValance) * (tokenValue / contractCalls.plat));
+            setValueAfterToken(contractCalls.toFixed4(amount));
             setApproveGas(0.6 * 100000000000)
         }
     };
 
     const getBalance = useCallback(async () => {
         contractCalls.balanceOf().then((balance) => {
-            setGvaraBalance(balance);
+            setGvaraBalance(contractCalls.toFixed4(balance));
             setLockedBalance(balance);
         })
     }, [contractCalls])
@@ -63,8 +97,8 @@ export function Unstake({openModal, closeModal, account, accounts, isModalOpen, 
         }
 
         // FETCH TOKEN VALUE
-        const tokenValue = await contractCalls.tokenValue();
-        const unstakeValue = (Number(unstakeAmount) * (tokenValue / contractCalls.plat)) * contractCalls.plat;
+        const unstakeValue = Number(unstakeAmount) * contractCalls.plat;
+        console.log(unstakeValue)
 
         const payload: AnyJson = {
             Unstake: {
@@ -150,22 +184,7 @@ export function Unstake({openModal, closeModal, account, accounts, isModalOpen, 
                                             borderColor: "#F8AD18",
                                         }}
                                         value={unstakeAmount}
-                                        onChange={(event) => {
-                                            const { value } = event.target;
-                                            if (!Number.isNaN(Number(value))) {
-                                                if (value.startsWith("0")) {
-                                                    setUnstakeAmount(value.slice(1));
-                                                } else {
-                                                    setUnstakeAmount(value);
-                                                }
-                                                setApproveGas(0.6 * contractCalls.plat)
-                                                setIsAmountInvalid(false);
-                                            }
-                                            if (Number(value) === 0) {
-                                                setUnstakeAmount("0")
-                                                setApproveGas(0)
-                                            }
-                                        }}
+                                        onChange={handleVaraUnstakeInputChange}
                                         borderWidth="3px"
                                         display="flex"
                                         alignContent="center"
@@ -225,7 +244,7 @@ export function Unstake({openModal, closeModal, account, accounts, isModalOpen, 
                                 style={{ color: "white" }}
                                 fontSize="18px"
                             >
-                                {unstakeAmount} VARA
+                                {valueAfterToken} VARA
                             </Td>
                         </Grid>
 

@@ -25,7 +25,7 @@ const Balance = () => {
         const contract = new SmartContract(api!, account!, accounts, alert)
 
         contract.balanceOf().then((balance) => {
-            setGvaraBalance(balance);
+            setGvaraBalance(contract.toFixed4(balance));
         })
     }, [api, account, accounts, alert])
 
