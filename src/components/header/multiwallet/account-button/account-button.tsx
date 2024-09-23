@@ -1,4 +1,3 @@
-import { Heading } from "@/components/shared/heading";
 import {Button, HStack} from "@chakra-ui/react";
 import Identicon from "@polkadot/react-identicon";
 import {buttonStyles} from "@gear-js/ui";
