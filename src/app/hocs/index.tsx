@@ -7,7 +7,7 @@ import {
 import { ComponentType } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import { ADDRESS } from '@/app/consts';
-import { Alert, alertStyles } from '@/components/ui/alert';
+import { Alert, alertStyles } from '@/components/shared/alert';
 import { HexString } from "@gear-js/api";
 import { KeyringPair } from '@polkadot/keyring/types';
 import { createContext, useState } from "react";

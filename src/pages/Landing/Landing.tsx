@@ -19,7 +19,7 @@ import {Section5} from "@/pages/Landing/Section5";
 import {useAccount} from "@gear-js/react-hooks";
 import {useEffect} from "react";
 
-function Landing() {
+function Landing({setBalanceChanged, balanceChanged}: any) {
 
     const { account } = useAccount();
 

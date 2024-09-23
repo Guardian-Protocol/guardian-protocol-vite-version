@@ -7,13 +7,13 @@ const routes = [
   { path: "/home", Page: Home },
 ];
 
-function Routing() {
+function Routing({setBalanceChanged, balanceChanged}: any) {
   const location = useLocation();
 
   return (
     <Routes location={location} key={location.pathname}>
       {routes.map(({ path, Page }) => (
-        <Route key={path} path={path} element={<Page />} />
+        <Route key={path} path={path} element={<Page setBalanceChanged={setBalanceChanged} balanceChanged={balanceChanged} />} />
       ))}
     </Routes>
   );
