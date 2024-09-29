@@ -80,29 +80,38 @@ export function Withdraw({contractCalls, account}: WithdrawProps) {
                         bg="#131111"
                         mt={index > 0 ? 4 : 0}
                     >
-                        <Flex justify="space-between" p={5} align="center" w="100%">
-                            <Flex align="center" w="70%" justify="space-between">
-                                <Flex direction="column" justify="space-between">
-                                    <Flex align="center">
-                                        <Text fontSize="lg" fontWeight="bold">Request Amount </Text>
-                                    </Flex>
-                                    <Flex align="center">
-                                        <Text fontSize="lg" fontWeight="bold">Remaining days </Text>
-                                    </Flex>
+                        <Flex justify="space-arount" p={5} align="center" w="100%">
+                            <Flex align="right" w="100%" justify="space-evenly">
+                                <Flex align="center">
+                                    <Text fontWeight="bold">Amount </Text>
                                 </Flex>
-                                <Flex direction="column" alignItems="flex-end">
-                                    <Flex align="center">
-                                        <Text fontSize="lg" fontWeight="bold">{history?.amount / contractCalls.plat}</Text>
-                                        <Image src={VaraLogo} boxSize="40px" ml={2} />
-                                    </Flex>
-                                    <Flex align="center">
-                                        <Text fontSize="lg" fontWeight="bold">
-                                            {Math.max(0, ((history?.liberationEra - currentEra) * 12) / 24)}
-                                        </Text>
-                                        <Text ml={4} fontSize="lg" fontWeight="bold">days</Text>
-                                    </Flex>
+                                
+                                <Flex align="center">
+                                    <Text  fontWeight="bold">{history?.amount / contractCalls.plat}</Text>
+                                    <Image src={VaraLogo} boxSize="40px" ml={2} />
+                                </Flex>
+
+                                <Flex align="center">
+                                    <Text  fontWeight="bold">Reward </Text>
+                                </Flex>
+                                
+                                <Flex align="center">
+                                    <Text fontWeight="bold">{history?.reward / contractCalls.plat}</Text>
+                                    <Image src={VaraLogo} boxSize="40px" ml={2} />
+                                </Flex>
+
+                                <Flex align="center">
+                                    <Text  fontWeight="bold">days to unlock </Text>
+                                </Flex>
+
+                                <Flex align="center">
+                                    
+                                    <Text  fontWeight="bold">
+                                        {Math.max(0, ((history?.liberationEra - currentEra) * 12) / 24)}
+                                    </Text>
                                 </Flex>
                             </Flex>
+                               
                             <Button
                                 onClick={async () =>{
                                     if (currentEra > history?.liberationEra) {
