@@ -37,6 +37,7 @@ type UnstakeProps = {
 };
 
 export function Unstake({openModal, closeModal, account, accounts, isModalOpen, contractCalls, balanceChanged, setBalanceChanged }: UnstakeProps) {
+
     const {balance} = useBalance(account?.address);
     const [unstakeAmount, setUnstakeAmount] = useState("0");
     const [approveGas, setApproveGas] = useState(0);
@@ -46,6 +47,7 @@ export function Unstake({openModal, closeModal, account, accounts, isModalOpen, 
     const [valueAfterToken, setValueAfterToken] = useState(0);
     const [isButtonDisabled, setIsButtonDisabled] = useState(true);
     const [refresh, setRefresh] = useState(false);
+    const [fetchTokenValue, setFetchTokenValue] = useState(0);
 
     const handleVaraUnstakeInputChange = async (event: any) => {
         const { value } = event.target;
@@ -108,7 +110,6 @@ export function Unstake({openModal, closeModal, account, accounts, isModalOpen, 
             setIsButtonDisabled(true);
         }, 5000);
 
-        // FETCH TOKEN VALUE
         const unstakeValue = Number(unstakeAmount) * contractCalls.plat;
         const payload: AnyJson = {
             Unstake: {
@@ -128,6 +129,9 @@ export function Unstake({openModal, closeModal, account, accounts, isModalOpen, 
 
     useEffect(() => {
         getBalance().then();
+        contractCalls.tokenValue().then((value) => {
+            setFetchTokenValue(value / contractCalls.plat);
+        })
     }, [getBalance, contractCalls, balance, isButtonDisabled]);
 
     useEffect(() => { }, [approveGas, balance, gvaraValance, isButtonDisabled, refresh]);
@@ -234,7 +238,21 @@ export function Unstake({openModal, closeModal, account, accounts, isModalOpen, 
                                 )}
                                 <Flex align="center" justifyContent="flex-end">
                                     <Image src={Advertencia} boxSize="30px" mr={2} />
-                                    <Text>The gas fee will be: {String((approveGas / 1000000000000) * 2)} VARA currently</Text>
+                                    <Text>This transaction doesn't need sign and gas payment</Text>
+                                </Flex>
+                            </Td>
+                        </Grid>
+
+                        <Grid templateColumns="1fr auto" gap="1">
+                            <Td
+                                isNumeric
+                                textAlign="end"
+                                style={{ color: "white" }}
+                                fontSize="15px"
+                            >
+                                <Flex align="center" justifyContent="flex-end">
+                                    <Image src={Advertencia} boxSize="30px" mr={2} />
+                                    <Text> 1 VARA = {fetchTokenValue} gVARA</Text>
                                 </Flex>
                             </Td>
                         </Grid>

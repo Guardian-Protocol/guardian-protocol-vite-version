@@ -6,10 +6,10 @@ import {
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import {SmartContract} from "@/services/SmartContract";
-import {Stake} from "@/components/stake/Stake";
-import {Unstake} from "@/components/unstake/Unstake";
-import {Withdraw} from "@/components/withdraw/Withdraw";
-import {History} from "@/components/stake/History";
+import {Stake} from "@/components/staking/Stake";
+import {History} from "@/components/staking/History";
+import { Unstake } from "./Unstake";
+import { Withdraw } from "./Withdraw";
 
 type TabListStakingProps = {
     account: any;
@@ -104,7 +104,6 @@ export function TabListStaking({account, accounts, contract, balanceChanged, set
                     isModalOpen={isModalOpen}
                     openModal={openModal}
                     closeModal={closeModal}
-                    accounts={accounts}
                     contract={contract}
                     balanceChanged={balanceChanged}
                     setBalanceChanged={setBalanceChanged}

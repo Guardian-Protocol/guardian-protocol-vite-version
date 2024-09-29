@@ -12,7 +12,6 @@ export class SmartContract {
 
     private api: GearApi;
 
-    // noinspection TypeScriptFieldCanBeMadeReadonly
     private account: Account | null;
     private accounts: any;
 
@@ -57,6 +56,12 @@ export class SmartContract {
     }
 
     public toFixed4 = (value: number): number => parseFloat(value.toFixed(4));
+    public loadingAlert = (message: string, timeout: number, callback: () => void) => {
+        this.alert.loading(message, { style: this.alertStyle, timeout: timeout });
+        callback();
+    };
+
+    public currentUser = () => this.account;
 
     public async stake(payload: AnyJson, amount: number, gasLimit: number, whenSuccess: () => void) {
         const transferMessage = this.api.tx.balances.transferKeepAlive(this.stash, amount);

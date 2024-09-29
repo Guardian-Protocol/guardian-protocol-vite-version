@@ -2,7 +2,7 @@ import {useAccount, useAlert, useApi} from "@gear-js/react-hooks";
 import {SmartContract} from "@/services/SmartContract";
 import {Box, Center, GridItem} from "@chakra-ui/react";
 import XBackground from "../../assets/images/XBackground.svg";
-import {TabListStaking} from "@/components/stake/TabListStaking";
+import {TabListStaking} from "@/components/staking/TabListStaking";
 
 function Home ({setBalanceChanged, balanceChanged}: any) {
     const { api } = useApi();
