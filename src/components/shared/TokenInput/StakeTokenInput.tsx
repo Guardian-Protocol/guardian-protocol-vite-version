@@ -3,9 +3,10 @@ import Advertencia from '@/assets/images/icons/advertencia.svg';
 import { useEffect, useState } from "react";
 import { SmartContract } from "@/services/SmartContract";
 import { formatDate } from "@/utils/date";
-import { useBalance, useBalanceFormat } from "@gear-js/react-hooks";
 
-type TokenInfoProps = {
+type formatedBalance = { value: string; unit: string } | undefined;
+
+type StakeTokenInputProps = {
     tokenLogo: string;
     amount: string;
     setAmount: any;
@@ -19,9 +20,7 @@ type TokenInfoProps = {
     setGas: any;
 }
 
-type formatedBalance = { value: string; unit: string } | undefined;
-
-export function TokenInput({
+export function StakeTokenInput({
     tokenLogo, 
     amount, 
     setAmount, 
@@ -33,30 +32,31 @@ export function TokenInput({
     setValueAfterToken,
     gas,
     setGas
-}: TokenInfoProps) {
+}: StakeTokenInputProps) {
 
     const [fetchTokenValue, setFetchTokenValue] = useState(0);
 
     const handleInputChange = async (e: any) => {
         const { value } = e.target;
         if (!Number.isNaN(Number(value))) {
-            if (value.startsWith("0")) {
-                setAmount(value.slice(1));
-            } else {
-                setAmount(value);
-            }
             setIsAmountInvalid(false);
 
+            if (value.length === 0) {
+                setAmount("0");
+                setGas(0);
+                setValueAfterToken(0);
+                return;
+            }
+
+            setAmount((value.startsWith("0")) ? value.slice(1) : value);
             const tokenValue = await contract.tokenValue() / contract.plat
             setValueAfterToken(contract.toFixed4(Number(value) / tokenValue));
 
-            const stakeValue = valueAfterToken * contract.plat;
             const amount = Number(value) * contract.plat;
-
             const gas = await contract.getGassLimit({ 
                 Stake: {
                     amount: amount,
-                    gvara_amount: stakeValue,
+                    gvara_amount: valueAfterToken * contract.plat,
                     user: contract.currentUser()?.decodedAddress,
                     date: formatDate(new Date()),
                 }

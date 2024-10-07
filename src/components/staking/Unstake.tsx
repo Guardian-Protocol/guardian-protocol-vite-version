@@ -6,10 +6,6 @@ import {
     Td,
     TableContainer,
     Button,
-    Input,
-    InputGroup,
-    InputRightElement,
-    InputLeftElement,
     Image,
     Text,
     Grid,
@@ -24,117 +20,110 @@ import Advertencia from "@/assets/images/icons/advertencia.svg";
 import {useBalance} from "@gear-js/react-hooks";
 import {AccountsModal} from "@/components/header/multiwallet/accounts-modal";
 import { formatDate } from "@/utils/date";
+import { UnstakeTokenInput } from "../shared/TokenInput/UnstakeTokenInput";
 
 type UnstakeProps = {
     account: any;
     isModalOpen: boolean;
     openModal: () => void;
     closeModal: () => void;
-    accounts: any;
-    contractCalls: SmartContract;
+    contract: SmartContract;
     balanceChanged: any;
     setBalanceChanged: any
 };
 
-export function Unstake({openModal, closeModal, account, accounts, isModalOpen, contractCalls, balanceChanged, setBalanceChanged }: UnstakeProps) {
+export function Unstake({
+    openModal, 
+    closeModal, 
+    account, 
+    isModalOpen, 
+    contract, 
+    balanceChanged, 
+    setBalanceChanged 
+}: UnstakeProps) {
 
     const {balance} = useBalance(account?.address);
-    const [unstakeAmount, setUnstakeAmount] = useState("0");
-    const [approveGas, setApproveGas] = useState(0);
+    const [amount, setAmount] = useState("0");
     const [gvaraValance, setGvaraBalance] = useState(0);
-    const [lockedBalance, setLockedBalance] = useState(0)
+    const [rewardAfter, setRewardAfter] = useState(0);
+    const [tokenValue, setTokenValue] = useState(0);
     const [isAmountInvalid, setIsAmountInvalid] = useState(false);
-    const [valueAfterToken, setValueAfterToken] = useState(0);
     const [isButtonDisabled, setIsButtonDisabled] = useState(true);
     const [refresh, setRefresh] = useState(false);
-    const [fetchTokenValue, setFetchTokenValue] = useState(0);
 
     const handleVaraUnstakeInputChange = async (event: any) => {
         const { value } = event.target;
         if (!Number.isNaN(Number(value))) {
-            if (value.startsWith("0")) {
-                setUnstakeAmount(value.slice(1));
-            } else {
-                setUnstakeAmount(value);
+
+            if (value.length === 0) {
+                setAmount("0");
+                setRewardAfter(0);
+                return;
             }
 
-            const tokenValue = await contractCalls.tokenValue();
-            const amount = (Number(value) * (tokenValue / contractCalls.plat));
-            setValueAfterToken(contractCalls.toFixed4(amount));
-            const amountUnstake =  amount * contractCalls.plat;
-            const gas = await contractCalls.getGassLimit({ 
-                Unstake: {
-                    amount: Number(value) * contractCalls.plat,
-                    reward: amountUnstake,
-                    user: account.decodedAddress,
-                    date: formatDate(new Date()),
-                    liberationEra: await contractCalls.getCurrentEra() + 14, 
-                }
-            }, 0);
-            
-            setApproveGas(Number(gas))
+            setAmount((value.startsWith("0")) ? value.slice(1) : value);
+            setRewardAfter(contract.toFixed4(Number(value) * tokenValue));
             setIsAmountInvalid(false);
         }
-        if (Number(value) === 0) {
-            setUnstakeAmount("0")
-            setApproveGas(0)
+        if (value === "") {
+            setAmount("0")
         }
     }
 
     const maxAmountVaraUnstake = async () => {
         if (gvaraValance > 0) {
-            setUnstakeAmount(String(Number(gvaraValance)));
-            const tokenValue = await contractCalls.tokenValue();
-            const amount = (Number(gvaraValance) * (tokenValue / contractCalls.plat));
-            setValueAfterToken(contractCalls.toFixed4(amount));
-            setApproveGas(0.6 * 100000000000)
+            const reward = (Number(gvaraValance) * tokenValue);
+            setAmount(String(Number(gvaraValance)));
+            setRewardAfter(contract.toFixed4(reward));
         }
     };
 
-    const getBalance = useCallback(async () => {
-        contractCalls.balanceOf().then((balance) => {
-            setGvaraBalance(contractCalls.toFixed4(balance));
-            setLockedBalance(balance);
-        })
-    }, [contractCalls])
-
     const unstakeVara = async () => {
-        if (Number(unstakeAmount) > gvaraValance || Number(unstakeAmount) > lockedBalance || Number(unstakeAmount) <= 0) {
+        if (Number(amount) > gvaraValance || Number(amount) <= 0) {
             setIsAmountInvalid(true);
             return;
         }
 
-        contractCalls.alert.loading("Unstaking VARA", { style: contractCalls.alertStyle, timeout: 5000 });
-        setIsButtonDisabled(false);
-        setTimeout(() => {
-            setIsButtonDisabled(true);
-        }, 5000);
+        contract.loadingAlert("Unstaking VARA", 5000, () => {
+            setIsButtonDisabled(false);
 
-        const unstakeValue = Number(unstakeAmount) * contractCalls.plat;
+            setTimeout(() => {
+                setIsButtonDisabled(true);
+            }, 5000);
+        });
+
+        const unstakeValue = contract.toPlank(Number(amount));
         const payload: AnyJson = {
             Unstake: {
                 amount: unstakeValue,
-                reward: valueAfterToken * contractCalls.plat,
+                reward: contract.toPlank(rewardAfter),
                 user: account.decodedAddress,
                 date: formatDate(new Date()),
-                liberationEra: await contractCalls.getCurrentEra() + 14,
+                liberationEra: await contract.getCurrentEra() + 14,
             }
         }
 
-        await contractCalls.unstake(payload, 0, unstakeValue, () => {
+        await contract.unstake(payload, 0, unstakeValue, () => {
             setRefresh(!refresh);
             setBalanceChanged(!balanceChanged);
         });
     }
 
+    const getBalance = useCallback(async () => {
+        contract.balanceOf().then((balance) => {
+            setGvaraBalance(contract.toFixed4(balance));
+        });
+
+        contract.tokenValue().then((value) => {
+            setTokenValue(value / contract.plat);
+        });
+    }, [contract]);
+
     useEffect(() => {
         getBalance().then();
-        contractCalls.tokenValue().then((value) => {
-            setFetchTokenValue(value / contractCalls.plat);
-        })
-    }, [getBalance, contractCalls, balance, isButtonDisabled]);
+    }, [getBalance, contract, balance, isButtonDisabled]);
 
-    useEffect(() => { }, [approveGas, balance, gvaraValance, isButtonDisabled, refresh]);
+    useEffect(() => { }, [balance, gvaraValance, isButtonDisabled, refresh]);
 
     return (
         <TabPanel
@@ -173,113 +162,15 @@ export function Unstake({openModal, closeModal, account, accounts, isModalOpen, 
                             </Td>
                         </Grid>
 
-                        <Grid templateColumns="1fr auto" gap="1">
-                            <Td position="revert">
-                                <InputGroup size="lg">
-                                    <InputLeftElement
-                                        pointerEvents="none"
-                                        paddingTop="10px"
-                                        w="90px"
-                                    >
-                                        <Text
-                                            fontFamily="'Consolas', italic"
-                                            color="turquoise"
-                                        >
-                                            g
-                                        </Text>
-                                        <Image src={VaraLogo} h="60px" w="60px" />
-                                    </InputLeftElement>
-                                    <Input
-                                        paddingLeft="78px"
-                                        w="700px"
-                                        h="60px"
-                                        type="text"
-                                        borderColor="#F8AD30"
-                                        borderRadius="20px"
-                                        focusBorderColor="#F8AD18"
-                                        color="white"
-                                        backgroundColor="#131111"
-                                        _hover={{
-                                            borderColor: "#F8AD18",
-                                        }}
-                                        value={unstakeAmount}
-                                        onChange={handleVaraUnstakeInputChange}
-                                        borderWidth="3px"
-                                        display="flex"
-                                        alignContent="center"
-                                    />
-                                    <InputRightElement
-                                        paddingRight="20px"
-                                        paddingTop="10px"
-                                    >
-                                        <Button
-                                            h="60px"
-                                            size="lg"
-                                            onClick={maxAmountVaraUnstake}
-                                            backgroundColor="transparent"
-                                            color="white"
-                                            _hover={{
-                                                backgroundColor: "transparent",
-                                            }}
-                                        >
-                                            MAX
-                                        </Button>
-                                    </InputRightElement>
-                                </InputGroup>
-                            </Td>
-                        </Grid>
-
-                        <Grid templateColumns="1fr auto" gap="1">
-                            <Td isNumeric color="white" fontSize="md">
-                                {isAmountInvalid && (
-                                    <Text color="red" fontSize="sm">
-                                        Invalid amount to perform transaction
-                                    </Text>
-                                )}
-                                <Flex align="center" justifyContent="flex-end">
-                                    <Image src={Advertencia} boxSize="30px" mr={2} />
-                                    <Text>This transaction doesn't need sign and gas payment</Text>
-                                </Flex>
-                            </Td>
-                        </Grid>
-
-                        <Grid templateColumns="1fr auto" gap="1">
-                            <Td
-                                isNumeric
-                                textAlign="end"
-                                style={{ color: "white" }}
-                                fontSize="15px"
-                            >
-                                <Flex align="center" justifyContent="flex-end">
-                                    <Image src={Advertencia} boxSize="30px" mr={2} />
-                                    <Text> 1 VARA = {fetchTokenValue} gVARA</Text>
-                                </Flex>
-                            </Td>
-                        </Grid>
-
-                        <Grid templateColumns="1fr auto" gap="4">
-                            <Tr textColor="white">
-                                <Td
-                                    fontSize="18px"
-                                    fontWeight="bold"
-                                    style={{ color: "white" }}
-                                >
-                                    You will receive
-                                </Td>
-                                <Td style={{ visibility: "hidden", color: "white" }}>
-                                    .
-                                </Td>
-                            </Tr>
-                            <Td
-                                isNumeric
-                                textAlign="end"
-                                fontWeight="bold"
-                                style={{ color: "white" }}
-                                fontSize="18px"
-                            >
-                                {valueAfterToken} VARA
-                            </Td>
-                        </Grid>
+                        <UnstakeTokenInput
+                            tokenLogo={VaraLogo}
+                            amount={amount}
+                            valueAfterToken={rewardAfter}
+                            isAmountInvalid={isAmountInvalid}
+                            handleInputChange={handleVaraUnstakeInputChange}
+                            handleMaxButtonPressed={maxAmountVaraUnstake}
+                            tokenValue={tokenValue}
+                        />
 
                         <Tr style={{ visibility: "hidden" }}>
                             <Td style={{ color: "white" }}>.</Td>

@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { SmartContract } from "@/services/SmartContract";
 import VaraLogo from "@/assets/images/VaraLogo.png";
 import {Account, useBalance} from "@gear-js/react-hooks";
+import { AnyJson } from "@polkadot/types/types";
 
 type WithdrawProps = {
     contractCalls: SmartContract;
@@ -23,7 +24,15 @@ export function Withdraw({contractCalls, account}: WithdrawProps) {
     const [isHistoryEmpty, setIsHistoryEmpty] = useState<boolean>(false);
 
     const handleWithdraw = async (unestakeId: number, amount: number, liberationEra: number) => {
-        await contractCalls.withdraw(unestakeId, amount, liberationEra);
+        const payload: AnyJson = {
+            Withdraw: {
+                unstake_id: unestakeId,
+                user: contractCalls.currentUser()?.decodedAddress,
+                actual_era: currentEra,
+            }
+        }
+
+        await contractCalls.withdraw(payload, liberationEra, amount);
     }
 
     useEffect(() => {

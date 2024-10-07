@@ -15,7 +15,7 @@ import VaraLogo from "@/assets/images/icons/ava-vara-black.svg";
 import {Account, useBalance, useBalanceFormat} from "@gear-js/react-hooks";
 import {AccountsModal} from "@/components/header/multiwallet/accounts-modal";
 import { formatDate } from "@/utils/date";
-import { TokenInput } from "../shared/TokenInput/VaraTokenInput";
+import { StakeTokenInput } from "../shared/TokenInput/StakeTokenInput";
 
 type StakeProps = {
     account: Account;
@@ -56,8 +56,8 @@ export function Stake({account, isModalOpen, openModal, closeModal, contract, ba
             }, 15000);
         });
 
-        const stakeValue = valueAfterToken * contract.plat;
-        const amount = Number(stakeAmount) * contract.plat;
+        const stakeValue = contract.toPlank(valueAfterToken);
+        const amount = contract.toPlank(Number(stakeAmount));
 
         const payload: AnyJson = {
             Stake: {
@@ -115,7 +115,7 @@ export function Stake({account, isModalOpen, openModal, closeModal, contract, ba
                             </Td>
                         </Grid>
 
-                        <TokenInput 
+                        <StakeTokenInput 
                             tokenLogo={VaraLogo} 
                             amount={stakeAmount} 
                             setAmount={setStakeAmount} 

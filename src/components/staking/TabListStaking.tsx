@@ -113,8 +113,7 @@ export function TabListStaking({account, accounts, contract, balanceChanged, set
                     account={account}
                     isModalOpen={isModalOpen}
                     openModal={openModal} closeModal={closeModal}
-                    accounts={accounts}
-                    contractCalls={contract}
+                    contract={contract}
                     balanceChanged={balanceChanged}
                     setBalanceChanged={setBalanceChanged}
                 />

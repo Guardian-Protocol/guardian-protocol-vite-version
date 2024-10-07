@@ -56,6 +56,8 @@ export class SmartContract {
     }
 
     public toFixed4 = (value: number): number => parseFloat(value.toFixed(4));
+    public toPlank = (value: number): number => Math.round(value * this.plat);
+    
     public loadingAlert = (message: string, timeout: number, callback: () => void) => {
         this.alert.loading(message, { style: this.alertStyle, timeout: timeout });
         callback();
@@ -91,25 +93,16 @@ export class SmartContract {
         });
     }
 
-    public async withdraw(unestakeId: number, liberationEra: number, amount: number) {
+    public async withdraw(payload: AnyJson, liberationEra: number, amount: number) {
         const currentEra = await this.getCurrentEra();
-
-        const payload =  {
-            Withdraw: [
-                unestakeId,
-                currentEra
-            ]
-        }
-
         const withdrawMessage = await this.contractMessage(payload, 0, 0.06 * this.plat);
 
-        await this.signer(withdrawMessage!, async () => {
+        await this.proxySigner(withdrawMessage!, async () => {
             if (currentEra >= liberationEra) {
-                this.alert.info("transaction in progress please dont leave the page", {style: this.alertStyle})
                 const withdrawTX = this.api.tx.staking.withdrawUnbonded(0);
                 const proxyTX = this.api.tx.proxy.proxy(this.stash, null, withdrawTX);
                 await this.proxySigner(proxyTX, async () => {
-                    const transferMessage = this.api.tx.balances.transferKeepAlive(this.account?.decodedAddress!, amount / this.plat);
+                    const transferMessage = this.api.tx.balances.transferKeepAlive(this.account?.decodedAddress!, amount);
                     const transferTX = this.api.tx.proxy.proxy(this.stash, null, transferMessage);
                     await this.proxySigner(transferTX, () => {
                         this.alert.success("SUCCESSFUL TRANSACTION", {style: this.alertStyle})
