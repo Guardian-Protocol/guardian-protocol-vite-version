@@ -141,22 +141,24 @@ export function Unstake({
                     justifyContent="space-between"
                     alignItems="center"
                 >
-                    <Tbody>
-                        <Grid templateColumns="1fr auto" gap="10">
+                    <Tbody w='100%' >
+                        <Grid templateColumns="1fr auto" gap={{base: 1, md: 10}}>
                             <Tr
                                 id="espacio"
                                 style={{ marginBottom: "3px !important" }}
                             >
-                                <Td fontSize="18px" style={{ color: "white" }}>
+                                <Td fontSize={{base: '16px', md: '18px'}} style={{ color: "white" }}>
                                     Amount
                                 </Td>
                                 <Td style={{ visibility: "hidden" }}>.</Td>
                             </Tr>
                             <Td
-                                fontSize="18px"
+                                fontSize={{base: '16px', md: '18px'}} 
                                 isNumeric
-                                textAlign="end"
+                                paddingInline={0}
                                 style={{ color: "white" }}
+                                display={{base: 'block', md: 'flex'}}
+                                whiteSpace={{base: 'pre-line', md: 'nowrap'}}
                             >
                                 Available to unlock: {gvaraValance} gVARA
                             </Td>
@@ -172,12 +174,6 @@ export function Unstake({
                             tokenValue={tokenValue}
                         />
 
-                        <Tr style={{ visibility: "hidden" }}>
-                            <Td style={{ color: "white" }}>.</Td>
-                            <Td style={{ color: "white" }}>.</Td>
-                            <Td isNumeric>.</Td>
-                        </Tr>
-
                         <TabPanel
                             display="flex"
                             justifyContent="center"
@@ -188,7 +184,9 @@ export function Unstake({
                                     <Flex justify="space-between" p={5} align="center" w="100%">
                                         <Flex align="center" justifyContent="center" >
                                             <Image src={Advertencia} boxSize="45px" mr={6} />
-                                            <Text fontSize="md">VARA will be available for withdrawal in 14 Eras (6-7 days)</Text>
+                                            <Text fontSize="md" 
+                                                display={{base: 'block', md: 'flex'}}
+                                                whiteSpace={{base: 'pre-line', md: 'nowrap'}}>VARA will be available for withdrawal in 14 Eras (6-7 days)</Text>
                                         </Flex>
                                     </Flex>
                                 </Box>

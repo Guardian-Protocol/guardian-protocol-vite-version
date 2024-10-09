@@ -29,24 +29,26 @@ function Landing({setBalanceChanged, balanceChanged}: any) {
 
     return (
         <>
-            <GridItem h="630px" w="100%" bg="#F8AD18">
+            <GridItem h={{base:"auto", md:"630px"}} pb={{base:'10', md:'0'}} w="100%" bg="#F8AD18" overflow={'hidden'}>
                 <Center>
                     <HStack>
-                        <Flex direction="row" gap="250">
+                        <Flex
+                            direction={{ base: "column", md: "row" }}
+                            gap={{ base: "10", md: "250" }}
+                        >
                             <HStack>
-                                <VStack align="start" spacing={5}>
-                                    <Heading size="4xl" textColor="black" textAlign="left" fontWeight="semibold">
+                                <VStack align="start" spacing={5} p={{base: '5', md: '0'}}>
+                                    <Heading size={{base:'2xl', md:'4xl'}} textColor="black" textAlign="left" fontWeight="semibold">
                                         Liquid Staking <br /> protocol
                                     </Heading>
-                                    <Text textColor="black" fontSize="3xl">
+                                    <Text textColor="black" fontSize={{base:'lg', md:'3xl'}}>
                                       Securing and decentralizing
                                     </Text>
                                     <Heading>
-                                        <Text>
+                                        <Text fontSize={{base:'lg', md:'4xl'}}>
                                             VARA NETWORK
                                         </Text>
                                     </Heading>
-                                    <Box h="20px" />
                                     <Button
                                         as={Link}
                                         to="/home"
@@ -59,12 +61,16 @@ function Landing({setBalanceChanged, balanceChanged}: any) {
                                         transition="all 0.2s cubic-bezier(.08,.52,.52,1)"
                                         border="2px"
                                         borderColor="yellow.300"
-                                        w="400px" >
+                                        w="90%"
+                                        marginLeft='auto'
+                                        marginRight='auto'
+                                        marginTop={{base:'5', md:'20'}}
+                                        >
                                         <Heading size="2x1">Stake now!</Heading>
                                     </Button>
                                 </VStack>
                             </HStack>
-                            <Box position="relative" w="39%" h="40%" >
+                            <Box position="relative" w={{ base: "90%", md: "39%" }} h={{ base: "60%", md: "40%" }}>
                                 <Box
                                     position="absolute"
                                     backgroundImage={`url(${DotGrid})`}
@@ -79,21 +85,21 @@ function Landing({setBalanceChanged, balanceChanged}: any) {
                                 <VStack>
                                     <Image
                                         position="revert"
-                                        marginLeft="-400px"
-                                        w="70px"
-                                        h="70 px"
+                                        marginLeft={{ base: "-30vh", md: "-400px" }}
+                                        w={{ base: "50px", md: "70px" }}
+                                        h={{ base: "50px", md: "70px" }}
                                         src="https://github.com/Guardian-Protocol/imagenes_guardian_protocol/blob/main/src/CoinGuardian.png?raw=true"
                                         transform="rotate(-25deg)"
                                     />
                                     <HoverEffect />
                                     <Image
                                         position="revert"
-                                        w="70px"
-                                        h="70 px"
+                                        w={{ base: "50px", md: "70px" }}
+                                        h={{ base: "50px", md: "70px" }}
                                         src="https://github.com/Guardian-Protocol/imagenes_guardian_protocol/blob/main/src/CoinGuardian.png?raw=true"
                                         transform="rotate(-45deg)"
-                                        marginLeft="400px"
-                                  />
+                                        marginLeft={{ base: "30vh", md: "400px" }}
+                                    />
                                 </VStack>
                             </Box>
                         </Flex>
@@ -101,13 +107,13 @@ function Landing({setBalanceChanged, balanceChanged}: any) {
                 </Center>
             </GridItem>
 
-            <GridItem h="600px" w="100%" bg="#F9B830" style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+            <GridItem h={{base: 'auto', md: '600px'}} w="100%" bg="#F9B830" style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
                 <Center>
                     <Section2/>
                 </Center>
             </GridItem>
 
-            <GridItem h="400px" w="100%" bg="#F9B830" style={{ display: "flex", justifyContent: "center", alignItems: "center" }}>
+            <GridItem h={{base: 'auto', md: '400px'}} pb='30px' w="100%" bg="#F9B830" style={{ display: "flex", justifyContent: "center", alignItems: "center"}}>
                 <Center>
                     <Section3/>
                 </Center>

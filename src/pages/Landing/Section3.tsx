@@ -34,34 +34,34 @@ export function Section3() {
             className="scroll-appear-element"
         >
             <HStack>
-                <Flex gap={9}>
+                <Flex gap={9} direction={{base: 'column', md: 'row'}} alignItems={{base:'center', md:'normal'}}>
                     <HStack gap={5}>
                         <Image
-                            w="180px"
-                            h="180px"
+                            w={{base:'70px', md:'180px'}}
+                            h={{base:'70px', md:'180px'}}
                             src="https://github.com/Guardian-Protocol/imagenes_guardian_protocol/blob/main/src/CoinGuardian.png?raw=true"
                         />
-                        <Heading size="lg" textColor="black" fontWeight="normal">
+                        <Heading size={{base:'md', md: 'lg'}} w={{base:'30vh', md:'auto'}} pl={{base:'3vh', md:'0'}}  textColor="black" fontWeight="normal">
                             Stake $VARA <br/> tokens protocols
                         </Heading>
                     </HStack>
                     <HStack gap={5}>
                         <Image
-                            w="180px"
-                            h="180px"
+                            w={{base:'70px', md:'180px'}}
+                            h={{base:'70px', md:'180px'}}
                             src="https://github.com/Guardian-Protocol/imagenes_guardian_protocol/blob/main/src/CoinGuardian.png?raw=true"
                         />
-                        <Heading size="lg" textColor="black" fontWeight="normal">
+                        <Heading size={{base:'md', md: 'lg'}} textColor="black" w={{base:'30vh', md:'auto'}} pl={{base:'3vh', md:'0'}}  fontWeight="normal">
                             Receive liquid <br/> $gVARA tokens
                         </Heading>
                     </HStack>
                     <HStack>
                         <Image
-                            w="180px"
-                            h="180px"
+                            w={{base:'70px', md:'180px'}}
+                            h={{base:'70px', md:'180px'}}
                             src="https://github.com/Guardian-Protocol/imagenes_guardian_protocol/blob/main/src/CoinGuardian.png?raw=true"
                         />
-                        <Heading size="lg" textColor="black" fontWeight="normal">Participate <br/> across DeFi
+                        <Heading size={{base:'md', md: 'lg'}} w={{base:'30vh', md:'auto'}} pl={{base:'3vh', md:'0'}} textColor="black" fontWeight="normal">Participate <br/> across DeFi
                         </Heading>
                     </HStack>
                 </Flex>

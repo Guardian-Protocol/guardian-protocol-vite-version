@@ -94,22 +94,24 @@ export function Stake({account, isModalOpen, openModal, closeModal, contract, ba
                     justifyContent="space-between"
                     alignItems="center"
                 >
-                    <Tbody>
+                    <Tbody w='100%' >
                         <Grid templateColumns="1fr auto" gap="10">
                             <Tr
                                 id="espacio"
                                 style={{ marginBottom: "3px !important" }}
                             >
-                                <Td fontSize="18px" style={{ color: "white" }}>
+                                <Td fontSize={{base: '16px', md: '18px'}} style={{ color: "white" }}>
                                     Amount
                                 </Td>
                                 <Td style={{ visibility: "hidden" }}>.</Td>
                             </Tr>
                             <Td
-                                fontSize="18px"
+                                fontSize={{base: '16px', md: '18px'}}
                                 isNumeric
                                 textAlign="end"
                                 style={{ color: "white" }}
+                                display={{base: 'block', md: 'flex'}}
+                                whiteSpace={{base: 'pre-line', md: 'nowrap'}}
                             >
                                 Available: {formattedBalance?.value ? (Number(formattedBalance?.value)) : (String(0))} VARA
                             </Td>
@@ -129,13 +131,7 @@ export function Stake({account, isModalOpen, openModal, closeModal, contract, ba
                             gas={gas}
                         />
 
-                        <Tr style={{ visibility: "hidden" }}>
-                            <Td>.</Td>
-                            <Td>.</Td>
-                            <Td isNumeric>.</Td>
-                        </Tr>
-
-                        <Grid templateColumns="1fr auto" gap="1">
+                        <Grid templateColumns="1fr auto" gap="1" mt={{base: '10px', md: '0'}}>
                             <Tr textColor="white">
                                 <Td fontSize="18px" style={{ color: "white" }}>
                                     Total Balance{" "}

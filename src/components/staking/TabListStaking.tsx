@@ -43,13 +43,13 @@ export function TabListStaking({account, accounts, contract, balanceChanged, set
             isFitted
             variant="enclosed"
             style={{ color: "white", border: "4px solid #F8AD18" }}
-            w="800px"
+            w={{ base: "95%", md: "800px" }}
             backgroundColor="black"
             borderRadius="30px"
             onChange={handleTabChange}
             minHeight="490px"
         >
-            <TabList mb="1em" h="60px">
+            <TabList mb="1em" h='auto' w='100%' display={'grid'} gridTemplateColumns={{ base: "repeat(2, 1fr)", md: "repeat(4, 1fr)" }}>
                 <Tab
                     _selected={{ bg: "#F8AD18", color: "black" }}
                     borderBottom="3px solid #F8AD18"
@@ -57,7 +57,8 @@ export function TabListStaking({account, accounts, contract, balanceChanged, set
                     borderTopRightRadius="0"
                     color="white"
                     backgroundColor="black"
-                    fontSize="18px"
+                    fontSize={{base: 'sm', md: 'xl'}}
+                    w='100%'
                 >
                     Stake
                 </Tab>
@@ -66,33 +67,39 @@ export function TabListStaking({account, accounts, contract, balanceChanged, set
                     borderBottom="3px solid #F8AD18"
                     borderRight="3px solid #F8AD18"
                     borderLeft="3px solid #F8AD18"
-                    borderRadius="0"
+                    borderTopLeftRadius="0px"
+                    borderTopRightRadius={{base: '24px', md: '0px'}}
                     color="white"
                     backgroundColor="black"
-                    fontSize="18px"
+                    fontSize={{base: 'sm', md: 'xl'}}
+                    w='100%'
                 >
                     Unstake
                 </Tab>
                 <Tab
                     _selected={{ bg: "#F8AD18", color: "black" }}
                     borderBottom="3px solid #F8AD18"
-                    borderRight="3px solid #F8AD18"
-                    borderLeft="3px solid #F8AD18"
+                    borderRight={{base: '0px', md: "3px solid #F8AD18"}}
+                    borderLeft={{base: '0px', md: "3px solid #F8AD18"}}
                     borderRadius="0"
                     color="white"
                     backgroundColor="black"
-                    fontSize="18px"
+                    fontSize={{base: 'sm', md: 'xl'}}
+                    w='100%'
                 >
                     Withdraw
                 </Tab>
                 <Tab
                     _selected={{ bg: "#F8AD18", color: "black" }}
+                    borderRight={{base: '0px', md: "3px solid #F8AD18"}}
+                    borderLeft={{base: '3px solid #F8AD18', md: "0px"}}
                     borderBottom="3px solid #F8AD18 "
                     borderTopLeftRadius="0px"
-                    borderTopRightRadius="24px"
+                    borderTopRightRadius={{base: '0', md: '24px'}}
                     color="white"
                     backgroundColor="black"
-                    fontSize="18px"
+                    fontSize={{base: 'sm', md: 'xl'}}
+                    w='100%'
                 >
                     History
                 </Tab>
