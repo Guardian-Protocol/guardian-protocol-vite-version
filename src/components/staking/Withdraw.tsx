@@ -77,70 +77,79 @@ export function Withdraw({contractCalls, account}: WithdrawProps) {
             h="500px"
             margin={"10px"}
         >
-            <Flex direction="column" w="100%">
-                {unestakeHistory.map((history, index) => (
-                    <Box
-                        key={history.unestakeId}
-                        borderWidth="3px"
-                        borderRadius="lg"
-                        overflow="hidden"
-                        w="100%"
-                        borderColor="#F8AD18"
-                        bg="#131111"
-                        mt={index > 0 ? 4 : 0}
-                    >
-                        <Flex justify="space-arount" p={5} align="center" w="100%">
-                            <Flex align="right" w="100%" justify="space-evenly">
-                                <Flex align="center">
-                                    <Text fontWeight="bold">Amount </Text>
-                                </Flex>
-                                
-                                <Flex align="center">
-                                    <Text  fontWeight="bold">{history?.amount / contractCalls.plat}</Text>
-                                    <Image src={VaraLogo} boxSize="40px" ml={2} />
-                                </Flex>
+            <Box w="100%" h="100%" mb='8'>
+                <Flex direction="column" w="100%">
+                    {unestakeHistory.map((history, index) => (
+                        <Box
+                            key={history.unestakeId}
+                            borderWidth="3px"
+                            borderRadius="lg"
+                            overflow="hidden"
+                            w="100%"
+                            borderColor="#F8AD18"
+                            bg="#131111"
+                            mt={index > 0 ? 4 : 0}
+                        >
+                            <Flex justify="space-arount" p={5} align="center" w="100%">
+                                <Flex direction={{base:'column', md: 'row'}} align="right" w="100%" justify="space-around">
+                                    <Flex justifyContent={'space-between'} gap={5}>
+                                        <Flex align="center">
+                                            <Text fontWeight="bold">Amount </Text>
+                                        </Flex>
+                                        
+                                        <Flex align="center">
+                                            <Text  fontWeight="bold">{history?.amount / contractCalls.plat}</Text>
+                                            <Image src={VaraLogo} boxSize="40px" ml={2} />
+                                        </Flex>
+                                    </Flex>
 
-                                <Flex align="center">
-                                    <Text  fontWeight="bold">Reward </Text>
-                                </Flex>
-                                
-                                <Flex align="center">
-                                    <Text fontWeight="bold">{history?.reward / contractCalls.plat}</Text>
-                                    <Image src={VaraLogo} boxSize="40px" ml={2} />
-                                </Flex>
+                                    <Flex justifyContent={'space-between'} gap={5}>
+                                        <Flex align="center">
+                                            <Text  fontWeight="bold">Reward </Text>
+                                        </Flex>
+                                        
+                                        <Flex align="center">
+                                            <Text fontWeight="bold">{history?.reward / contractCalls.plat}</Text>
+                                            <Image src={VaraLogo} boxSize="40px" ml={2} />
+                                        </Flex>
+                                    </Flex>
 
-                                <Flex align="center">
-                                    <Text  fontWeight="bold">days to unlock </Text>
-                                </Flex>
+                                    <Flex justifyContent={'space-between'} gap={5}>
+                                        <Flex align="center">
+                                            <Text  fontWeight="bold">days to unlock </Text>
+                                        </Flex>
 
-                                <Flex align="center">
-                                    
-                                    <Text  fontWeight="bold">
-                                        {Math.max(0, ((history?.liberationEra - currentEra) * 12) / 24)}
-                                    </Text>
+                                        <Flex align="center">
+                                            
+                                            <Text  fontWeight="bold">
+                                                {Math.max(0, ((history?.liberationEra - currentEra) * 12) / 24)}
+                                            </Text>
+                                        </Flex>
+                                    </Flex>
+                                    <Flex justifyContent={'space-around'} mt={{base:'30px', md: '0'}}>
+                                        <Button
+                                            onClick={async () =>{
+                                                if (currentEra > history?.liberationEra) {
+                                                    await handleWithdraw(history?.unestakeId, history?.amount, history?.liberationEra);
+                                                } else {}
+                                            }}
+                                            colorScheme="teal"
+                                            size="lg"
+                                            style={{
+                                                color: "black",
+                                                background: (currentEra > history?.liberationEra) ? "#F8AD18" : "rgba(252,187,68,0.22)",
+                                                width: "140px",
+                                            }}
+                                        >
+                                            Claim
+                                        </Button>
+                                    </Flex>
                                 </Flex>
                             </Flex>
-                               
-                            <Button
-                                onClick={async () =>{
-                                    if (currentEra > history?.liberationEra) {
-                                        await handleWithdraw(history?.unestakeId, history?.amount, history?.liberationEra);
-                                    } else {}
-                                }}
-                                colorScheme="teal"
-                                size="lg"
-                                style={{
-                                    color: "black",
-                                    background: (currentEra > history?.liberationEra) ? "#F8AD18" : "rgba(252,187,68,0.22)",
-                                    width: "140px",
-                                }}
-                            >
-                                Claim
-                            </Button>
-                        </Flex>
-                    </Box>
-                ))}
-            </Flex>
+                        </Box>
+                    ))}
+                </Flex>
+            </Box>
 
         </TabPanel>
     )

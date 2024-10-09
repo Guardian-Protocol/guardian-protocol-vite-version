@@ -1,5 +1,6 @@
 import { Button, Flex, Grid, Image, Input, InputGroup, InputLeftElement, InputRightElement, Td, Text, Tr } from "@chakra-ui/react";
 import Advertencia from '@/assets/images/icons/advertencia.svg';
+import { useEffect, useState } from "react";
 
 type formatedBalance = { value: string; unit: string } | undefined;
 
@@ -22,6 +23,22 @@ export function UnstakeTokenInput({
     handleMaxButtonPressed,
     tokenValue
 }: StakeTokenInputProps) {
+
+    const [isScreenSmall, setIsScreenSmall] = useState(window.innerWidth <= 768);
+
+    useEffect(() => {
+        const mediaQuery = window.matchMedia("(max-width: 768px)");
+        const handleMediaQueryChange = (e: MediaQueryListEvent) => {
+            setIsScreenSmall(e.matches);
+        };
+
+        mediaQuery.addEventListener("change", handleMediaQueryChange);
+
+        return () => {
+            mediaQuery.removeEventListener("change", handleMediaQueryChange);
+        };
+    }, []);
+
     return (
         <>
             <Grid templateColumns="1fr auto" gap="1">
@@ -42,7 +59,7 @@ export function UnstakeTokenInput({
                         </InputLeftElement>
                         <Input
                             paddingLeft="78px"
-                            w="700px"
+                            w={{base: "100%", md: "700px"}}
                             h="60px"
                             type="text"
                             borderColor="#F8AD30"
@@ -58,6 +75,7 @@ export function UnstakeTokenInput({
                             borderWidth="3px"
                             display="flex"
                             alignContent="center"
+                            paddingInlineEnd={10}
                         />
                         <InputRightElement
                             paddingRight="20px"
@@ -89,7 +107,9 @@ export function UnstakeTokenInput({
                     )}
                     <Flex align="center" justifyContent="flex-end">
                         <Image src={Advertencia} boxSize="30px" mr={2} />
-                        <Text>This transaction doesn't need sign and gas payment</Text>
+                        <Text                                 
+                            display={{base: 'block', md: 'flex'}}
+                            whiteSpace={{base: 'pre-line', md: 'nowrap'}}>This transaction doesn't need sign and gas payment</Text>
                     </Flex>
                 </Td>
             </Grid>
@@ -108,29 +128,66 @@ export function UnstakeTokenInput({
                 </Td>
             </Grid>
 
-            <Grid templateColumns="1fr auto" gap="4">
-                <Tr textColor="white">
+            {isScreenSmall ? (
+                <>
+                    <Grid templateColumns="1fr auto" gap="1" mt='10px'>
+                        <Tr textColor="white">
+                            <Td
+                                fontSize="18px"
+                                fontWeight="bold"
+                                style={{ color: "white" }}
+                            >
+                                You will receive: 
+                            </Td>
+                        </Tr>
+                    </Grid>
+                    <Tr>
+                        <Td style={{ visibility: "hidden" }}>.</Td>
+                        <Td style={{ visibility: "hidden" }}>.</Td>
+                        <Td
+                            isNumeric
+                            textAlign="end"
+                            fontWeight="bold"
+                            style={{ color: "white" }}
+                            fontSize="18px"
+                            w={{base: '100%', md: 'auto'}}
+                        >
+                            {valueAfterToken} gVARA
+                        </Td>
+                    </Tr>
+                </>
+            ) : (
+                <>
+                <Grid templateColumns="1fr auto" gap="1">
+                    <Tr textColor="white">
+                        <Td
+                            fontSize="18px"
+                            fontWeight="bold"
+                            style={{ color: "white" }}
+                        >
+                            You will receive
+                        </Td>
+                        <Td style={{ visibility: "hidden" }}>.</Td>
+                    </Tr>
                     <Td
-                        fontSize="18px"
-                        fontWeight="bold"
-                        style={{ color: "white" }}
-                    >
-                        You will receive
+                            isNumeric
+                            textAlign="end"
+                            fontWeight="bold"
+                            style={{ color: "white" }}
+                            fontSize="18px"
+                            w={{base: '100%', md: 'auto'}}
+                        >
+                            {valueAfterToken} gVARA
                     </Td>
-                    <Td style={{ visibility: "hidden", color: "white" }}>
-                        .
+                </Grid>
+                <Tr style={{ visibility: "hidden" }}>
+                    <Td>.</Td>
+                    <Td>.</Td>
+                    <Td isNumeric>.
                     </Td>
                 </Tr>
-                <Td
-                    isNumeric
-                    textAlign="end"
-                    fontWeight="bold"
-                    style={{ color: "white" }}
-                    fontSize="18px"
-                >
-                    {valueAfterToken} VARA
-                </Td>
-            </Grid>
+            </>
+            )}
         </>
     )
 }

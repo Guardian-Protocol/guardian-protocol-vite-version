@@ -7,8 +7,8 @@ function HoverEffect() {
         <motion.div whileHover={{ scale: 1.1 }}>
             <Image
                 position="relative"
-                w="440px"
-                h="440px"
+                w={{base:'240px', md:'440px'}}
+                h={{base:'240px', md:'440px'}}
                 src="https://github.com/Guardian-Protocol/imagenes_guardian_protocol/blob/main/src/CoinGuardian.png?raw=true"
             />
         </motion.div>

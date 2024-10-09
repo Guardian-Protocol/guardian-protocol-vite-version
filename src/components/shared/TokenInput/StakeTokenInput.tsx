@@ -35,6 +35,7 @@ export function StakeTokenInput({
 }: StakeTokenInputProps) {
 
     const [fetchTokenValue, setFetchTokenValue] = useState(0);
+    const [isScreenSmall, setIsScreenSmall] = useState(window.innerWidth <= 768);
 
     const handleInputChange = async (e: any) => {
         const { value } = e.target;
@@ -97,7 +98,18 @@ export function StakeTokenInput({
     useEffect(() => {
         contract.tokenValue().then((value) => {
             setFetchTokenValue(value / contract.plat);
-        })
+        });
+
+        const mediaQuery = window.matchMedia("(max-width: 768px)");
+        const handleMediaQueryChange = (e: MediaQueryListEvent) => {
+            setIsScreenSmall(e.matches);
+        };
+
+        mediaQuery.addEventListener("change", handleMediaQueryChange);
+
+        return () => {
+            mediaQuery.removeEventListener("change", handleMediaQueryChange);
+        };
     }, [fetchTokenValue]);
 
     return (                 
@@ -114,7 +126,7 @@ export function StakeTokenInput({
                         </InputLeftElement>
                         <Input
                             paddingLeft="70px"
-                            w="700px"
+                            w={{base: "100%", md: "700px"}}
                             h="60px"
                             type="text"
                             borderColor="#F8AD30"
@@ -161,7 +173,10 @@ export function StakeTokenInput({
                     )}
                     <Flex align="center" justifyContent="flex-end">
                         <Image src={Advertencia} boxSize="30px" mr={2} />
-                        <Text>The gas fee will be: {String(gas / 100000000000)} VARA currently</Text>
+                        <Text
+                            display={{base: 'block', md: 'flex'}}
+                            whiteSpace={{base: 'pre-line', md: 'nowrap'}}
+                        >The gas fee will be: {String(gas / 100000000000)} VARA currently</Text>
                     </Flex>
                 </Td>
             </Grid>
@@ -180,27 +195,66 @@ export function StakeTokenInput({
                 </Td>
             </Grid>
 
-            <Grid templateColumns="1fr auto" gap="1">
-                <Tr textColor="white">
+            {isScreenSmall ? (
+                <>
+                    <Grid templateColumns="1fr auto" gap="1" mt='10px'>
+                        <Tr textColor="white">
+                            <Td
+                                fontSize="18px"
+                                fontWeight="bold"
+                                style={{ color: "white" }}
+                            >
+                                You will receive: 
+                            </Td>
+                        </Tr>
+                    </Grid>
+                    <Tr>
+                        <Td style={{ visibility: "hidden" }}>.</Td>
+                        <Td style={{ visibility: "hidden" }}>.</Td>
+                        <Td
+                            isNumeric
+                            textAlign="end"
+                            fontWeight="bold"
+                            style={{ color: "white" }}
+                            fontSize="18px"
+                            w={{base: '100%', md: 'auto'}}
+                        >
+                            {valueAfterToken} gVARA
+                        </Td>
+                    </Tr>
+                </>
+            ) : (
+                <>
+                <Grid templateColumns="1fr auto" gap="1">
+                    <Tr textColor="white">
+                        <Td
+                            fontSize="18px"
+                            fontWeight="bold"
+                            style={{ color: "white" }}
+                        >
+                            You will receive
+                        </Td>
+                        <Td style={{ visibility: "hidden" }}>.</Td>
+                    </Tr>
                     <Td
-                        fontSize="18px"
-                        fontWeight="bold"
-                        style={{ color: "white" }}
-                    >
-                        You will receive
+                            isNumeric
+                            textAlign="end"
+                            fontWeight="bold"
+                            style={{ color: "white" }}
+                            fontSize="18px"
+                            w={{base: '100%', md: 'auto'}}
+                        >
+                            {valueAfterToken} gVARA
                     </Td>
-                    <Td style={{ visibility: "hidden" }}>.</Td>
+                </Grid>
+                <Tr style={{ visibility: "hidden" }}>
+                    <Td>.</Td>
+                    <Td>.</Td>
+                    <Td isNumeric>.
+                    </Td>
                 </Tr>
-                <Td
-                    isNumeric
-                    textAlign="end"
-                    fontWeight="bold"
-                    style={{ color: "white" }}
-                    fontSize="18px"
-                >
-                    {valueAfterToken} gVARA
-                </Td>
-            </Grid>
+            </>
+            )}
         </>
     )
 }
