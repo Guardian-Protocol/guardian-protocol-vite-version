@@ -94,17 +94,6 @@ export function Withdraw({contractCalls, account}: WithdrawProps) {
                                 <Flex direction={{base:'column', md: 'row'}} align="right" w="100%" justify="space-around">
                                     <Flex justifyContent={'space-between'} gap={5}>
                                         <Flex align="center">
-                                            <Text fontWeight="bold">Amount </Text>
-                                        </Flex>
-                                        
-                                        <Flex align="center">
-                                            <Text  fontWeight="bold">{history?.amount / contractCalls.plat}</Text>
-                                            <Image src={VaraLogo} boxSize="40px" ml={2} />
-                                        </Flex>
-                                    </Flex>
-
-                                    <Flex justifyContent={'space-between'} gap={5}>
-                                        <Flex align="center">
                                             <Text  fontWeight="bold">Reward </Text>
                                         </Flex>
                                         
