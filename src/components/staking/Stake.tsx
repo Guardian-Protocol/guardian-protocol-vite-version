@@ -7,6 +7,7 @@ import {
     TableContainer,
     Button,
     Grid,
+    Flex,
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { SmartContract } from "@/services/SmartContract";
@@ -95,16 +96,13 @@ export function Stake({account, isModalOpen, openModal, closeModal, contract, ba
                     alignItems="center"
                 >
                     <Tbody w='100%' >
-                        <Grid templateColumns="1fr auto" gap="10">
-                            <Tr
-                                id="espacio"
-                                style={{ marginBottom: "3px !important" }}
+                        <Flex justifyContent={{base:'center', md: 'space-between'}}  w={'90%'} marginRight={'auto'} marginLeft={'auto'} marginBottom={'5px'} marginTop={'5px'}>
+                            <Td fontSize={{base: '16px', md: '18px'}} style={{ color: "white" }}
+                            paddingInline={0}
+                            paddingTop={0}
                             >
-                                <Td fontSize={{base: '16px', md: '18px'}} style={{ color: "white" }}>
-                                    Amount
-                                </Td>
-                                <Td style={{ visibility: "hidden" }}>.</Td>
-                            </Tr>
+                                Amount
+                            </Td>
                             <Td
                                 fontSize={{base: '16px', md: '18px'}}
                                 isNumeric
@@ -112,10 +110,13 @@ export function Stake({account, isModalOpen, openModal, closeModal, contract, ba
                                 style={{ color: "white" }}
                                 display={{base: 'block', md: 'flex'}}
                                 whiteSpace={{base: 'pre-line', md: 'nowrap'}}
+                                w={{base: '80%', md: 'auto'}}
+                                paddingInline={0}
+                                paddingTop={0}
                             >
                                 Available: {formattedBalance?.value ? (Number(formattedBalance?.value)) : (String(0))} VARA
                             </Td>
-                        </Grid>
+                        </Flex>
 
                         <StakeTokenInput 
                             tokenLogo={VaraLogo} 

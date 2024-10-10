@@ -59,6 +59,7 @@ export function UnstakeTokenInput({
                         </InputLeftElement>
                         <Input
                             paddingLeft="78px"
+                            paddingRight="60px"
                             w={{base: "100%", md: "700px"}}
                             h="60px"
                             type="text"
@@ -141,9 +142,7 @@ export function UnstakeTokenInput({
                             </Td>
                         </Tr>
                     </Grid>
-                    <Tr>
-                        <Td style={{ visibility: "hidden" }}>.</Td>
-                        <Td style={{ visibility: "hidden" }}>.</Td>
+                    <Tr w='100%' justifyContent={'flex-end'} display={'flex'}>
                         <Td
                             isNumeric
                             textAlign="end"
