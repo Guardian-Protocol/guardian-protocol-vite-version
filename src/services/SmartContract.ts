@@ -3,6 +3,7 @@ import {Account, AlertContainerFactory} from "@gear-js/react-hooks";
 import {SubmittableExtrinsic} from "@polkadot/api/promise/types";
 import {web3FromSource} from "@polkadot/extension-dapp";
 import {AnyJson, ISubmittableResult} from "@polkadot/types/types";
+import React from "react";
 
 type address = `0x${string}`
 type promiseXt = Promise<SubmittableExtrinsic | null>
@@ -25,12 +26,17 @@ export class SmartContract {
     private readonly ftSource: address;
     private readonly ftMetadata: ProgramMetadata;
 
-    public readonly alertStyle = {
-        width: "30%",
-        height: "5%",
-        margin: "20px",
-        backgroundColor: "rgba(213,145,0,0.95)"
-    }
+    public getAlertStyle(): React.CSSProperties{
+        const isMobile = window.innerWidth < 720;
+        return{
+            width: isMobile ? "70%" : "30%",
+            height: "5%",
+            margin: "20px",
+            backgroundColor: "rgba(213,145,0,0.95)"
+        }
+    };
+
+    public readonly alertStyle = this.getAlertStyle();
 
     constructor(
         api: GearApi,

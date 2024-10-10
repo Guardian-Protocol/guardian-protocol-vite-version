@@ -142,16 +142,11 @@ export function Unstake({
                     alignItems="center"
                 >
                     <Tbody w='100%' >
-                        <Grid templateColumns="1fr auto" gap={{base: 1, md: 10}}>
-                            <Tr
-                                id="espacio"
-                                style={{ marginBottom: "3px !important" }}
-                            >
-                                <Td fontSize={{base: '16px', md: '18px'}} style={{ color: "white" }}>
-                                    Amount
-                                </Td>
-                                <Td style={{ visibility: "hidden" }}>.</Td>
-                            </Tr>
+                        <Flex  justifyContent={{base:'center', md: 'space-between'}}  w={'90%'} marginRight={'auto'} marginLeft={'auto'} marginBottom={'5px'} marginTop={'5px'}>
+                            <Td fontSize={{base: '16px', md: '18px'}} style={{ color: "white" }} paddingInline={0} paddingTop={0}>
+                                Amount
+                            </Td>
+                            <Td style={{ visibility: "hidden" }}>.</Td>
                             <Td
                                 fontSize={{base: '16px', md: '18px'}} 
                                 isNumeric
@@ -159,10 +154,12 @@ export function Unstake({
                                 style={{ color: "white" }}
                                 display={{base: 'block', md: 'flex'}}
                                 whiteSpace={{base: 'pre-line', md: 'nowrap'}}
+                                w={{base: '80%', md: 'auto'}}
+                                paddingTop={0}
                             >
                                 Available to unlock: {gvaraValance} gVARA
                             </Td>
-                        </Grid>
+                        </Flex>
 
                         <UnstakeTokenInput
                             tokenLogo={VaraLogo}

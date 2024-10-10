@@ -126,6 +126,7 @@ export function StakeTokenInput({
                         </InputLeftElement>
                         <Input
                             paddingLeft="70px"
+                            paddingRight="60px"
                             w={{base: "100%", md: "700px"}}
                             h="60px"
                             type="text"
@@ -208,11 +209,10 @@ export function StakeTokenInput({
                             </Td>
                         </Tr>
                     </Grid>
-                    <Tr>
-                        <Td style={{ visibility: "hidden" }}>.</Td>
-                        <Td style={{ visibility: "hidden" }}>.</Td>
+                    <Tr w='100%' justifyContent={'flex-end'} display={'flex'}>
                         <Td
                             isNumeric
+                            flex={1}
                             textAlign="end"
                             fontWeight="bold"
                             style={{ color: "white" }}
