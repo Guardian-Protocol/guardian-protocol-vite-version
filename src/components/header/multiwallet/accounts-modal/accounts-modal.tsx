@@ -70,6 +70,7 @@ const AccountsModal = ({ close }: Props) => {
       return (
         <Card key={address} margin={"20px"}>
             <AccountButton
+                isNavBar={false}
                 name={meta.name}
                 address={address}
                 onClick={handleClick}

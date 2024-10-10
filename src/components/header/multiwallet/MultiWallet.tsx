@@ -20,6 +20,7 @@ const MultiWallet = ({balanceChanged}: any) => {
         {isAccountReady &&
           (account ? (
             <AccountButton
+              isNavBar={true}
               name={account.meta.name}
               address={account.address}
               onClick={openModal}
