@@ -29,8 +29,8 @@ const AccountButton = ({isNavBar, name, address, className, onClick }: Props) =>
   }, []);
 
   return (
-      <Button display={'flex'} justifyContent={'space-evenly'} backgroundColor="yellow.200" className={className} onClick={onClick} _hover={{ backgroundColor: 'yellow.300' }}>
-        <Identicon value={address} className={buttonStyles.icon} theme="polkadot" size={28}/>
+      <Button display={'flex'} style={!isNavBar?{justifyContent:'space-evenly'}:{justifyContent:'center'}} backgroundColor="yellow.200" className={className} onClick={onClick} _hover={{ backgroundColor: 'yellow.300' }}>
+        <Identicon value={address} className={buttonStyles.icon} theme="polkadot" size={28} style={isScreenSmall?{margin:'0px'}:{margin:'10px'}}/>
         {isScreenSmall && isNavBar ? null : name}
       </Button>
   );
