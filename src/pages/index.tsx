@@ -12,9 +12,8 @@ function Routing({setBalanceChanged, balanceChanged}: any) {
 
   return (
     <Routes location={location} key={location.pathname}>
-      {routes.map(({ path, Page }) => (
-        <Route key={path} path={path} element={<Page setBalanceChanged={setBalanceChanged} balanceChanged={balanceChanged} />} />
-      ))}
+      <Route path="/" element={<Landing setBalanceChanged={setBalanceChanged} balanceChanged={balanceChanged} />}/>
+      <Route path="/home" element={<Home setBalanceChanged={setBalanceChanged} balanceChanged={balanceChanged} />} />
     </Routes>
   );
 }
