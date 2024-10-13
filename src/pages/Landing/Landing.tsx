@@ -16,16 +16,8 @@ import {Section2} from "@/pages/Landing/Section2";
 import {Section3} from "@/pages/Landing/Section3";
 import {Section4} from "@/pages/Landing/Section4";
 import {Section5} from "@/pages/Landing/Section5";
-import {useAccount} from "@gear-js/react-hooks";
-import {useEffect} from "react";
 
 function Landing({setBalanceChanged, balanceChanged}: any) {
-
-    const { account } = useAccount();
-
-    useEffect(() => {
-        console.log(account)
-    }, [account]);
 
     return (
         <>

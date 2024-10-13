@@ -142,8 +142,6 @@ export class SmartContract {
             return 0;
         }
 
-        console.log(this.account?.decodedAddress)
-
         return result.toNumber() / this.plat;
     }
 
@@ -154,8 +152,6 @@ export class SmartContract {
                 GuardianInfo: null
             }
         }, this.metadata);
-
-        console.log( (state.toJSON() as any).ok.liquidInfo.tokenValue)
 
         return (state.toJSON() as any).ok.liquidInfo.tokenValue;
     }
