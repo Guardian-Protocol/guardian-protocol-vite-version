@@ -12,8 +12,8 @@ function Routing({setBalanceChanged, balanceChanged}: any) {
 
   return (
     <Routes>
-      <Route path="/" element={<Landing setBalanceChanged={setBalanceChanged} balanceChanged={balanceChanged} />}/>
-      <Route path="/home" element={<Home setBalanceChanged={setBalanceChanged} balanceChanged={balanceChanged} />} />
+      <Route path="/guardian-protocol-vite-version/" element={<Landing setBalanceChanged={setBalanceChanged} balanceChanged={balanceChanged} />}/>
+      <Route path="/guardian-protocol-vite-version/home" element={<Home setBalanceChanged={setBalanceChanged} balanceChanged={balanceChanged} />} />
     </Routes>
   );
 }
