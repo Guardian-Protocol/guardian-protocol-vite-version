@@ -11,7 +11,7 @@ function Routing({setBalanceChanged, balanceChanged}: any) {
   const location = useLocation();
 
   return (
-    <Routes location={location} key={location.pathname}>
+    <Routes>
       <Route path="/" element={<Landing setBalanceChanged={setBalanceChanged} balanceChanged={balanceChanged} />}/>
       <Route path="/home" element={<Home setBalanceChanged={setBalanceChanged} balanceChanged={balanceChanged} />} />
     </Routes>
