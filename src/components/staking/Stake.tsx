@@ -38,6 +38,7 @@ export function Stake({account, isModalOpen, openModal, closeModal, contract, ba
     const [isButtonDisabled, setIsButtonDisabled] = useState(true);
     const [isAmountInvalid, setIsAmountInvalid] = useState(false);
     const [valueAfterToken, setValueAfterToken] = useState(0);
+    const [alertId, setAlertId] = useState("")
     const [stakeAmount, setStakeAmount] = useState("0");
     const [gas, setGas] = useState(0);
 
@@ -49,13 +50,11 @@ export function Stake({account, isModalOpen, openModal, closeModal, contract, ba
             return;
         }
 
-        contract.loadingAlert("Staking VARA", 5000, () => {
+        let alertId = contract.loadingAlert("Staking VARA - Dont leave the page", () => {
             setIsButtonDisabled(false);
-
-            setTimeout(() => {
-                setIsButtonDisabled(true);
-            }, 15000);
         });
+
+        setAlertId(alertId);
 
         const stakeValue = contract.toPlank(valueAfterToken);
         const amount = contract.toPlank(Number(stakeAmount));
@@ -68,9 +67,22 @@ export function Stake({account, isModalOpen, openModal, closeModal, contract, ba
                 date: formatDate(new Date()),
             }
         }
-        await contract.stake(payload, amount, gas, () => {
-            setBalanceChanged(!balanceChanged)
-        })
+
+        try {
+            await contract.stake(payload, amount, gas, () => {
+                setBalanceChanged(!balanceChanged)
+                setIsButtonDisabled(true);
+                contract.closeAlert(alertId);
+                setStakeAmount("0");
+                setValueAfterToken(0);
+            });
+        } catch {
+            contract.errorAlert("Operation cancelled")
+            contract.closeAlert(alertId);
+            setIsButtonDisabled(true);
+            setStakeAmount("0");
+            setValueAfterToken(0);
+        }
     }
 
     useEffect(() => {

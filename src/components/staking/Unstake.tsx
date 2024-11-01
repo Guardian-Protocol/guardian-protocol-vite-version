@@ -49,6 +49,7 @@ export function Unstake({
     const [tokenValue, setTokenValue] = useState(0);
     const [isAmountInvalid, setIsAmountInvalid] = useState(false);
     const [isButtonDisabled, setIsButtonDisabled] = useState(true);
+    const [alertId, setAlertId] = useState("");
     const [refresh, setRefresh] = useState(false);
 
     const handleVaraUnstakeInputChange = async (event: any) => {
@@ -83,14 +84,13 @@ export function Unstake({
             setIsAmountInvalid(true);
             return;
         }
+        setRefresh(true);
 
-        contract.loadingAlert("Unstaking VARA", 5000, () => {
+        let alertId = contract.loadingAlert("Unstaking VARA", () => {
             setIsButtonDisabled(false);
-
-            setTimeout(() => {
-                setIsButtonDisabled(true);
-            }, 5000);
         });
+
+        setAlertId(alertId);
 
         const unstakeValue = contract.toPlank(Number(amount));
         const payload: AnyJson = {
@@ -103,10 +103,22 @@ export function Unstake({
             }
         }
 
-        await contract.unstake(payload, 0, unstakeValue, () => {
-            setRefresh(!refresh);
-            setBalanceChanged(!balanceChanged);
-        });
+        try {
+            await contract.unstake(payload, 0, unstakeValue, () => {
+                setRefresh(false);
+                setBalanceChanged(!balanceChanged);
+                setIsButtonDisabled(true);
+                setAmount("0");
+                setRewardAfter(0);
+                contract.closeAlert(alertId);
+            });
+        } catch {
+            setIsButtonDisabled(true);
+            setAmount("0");
+            setRewardAfter(0);
+        
+            contract.closeAlert(alertId);
+        }
     }
 
     const getBalance = useCallback(async () => {

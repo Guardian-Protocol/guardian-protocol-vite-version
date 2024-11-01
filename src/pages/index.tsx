@@ -1,4 +1,4 @@
-import { Route, Routes, useLocation } from "react-router-dom";
+import { createHashRouter, HashRouter, Route, Routes, useLocation } from "react-router-dom";
 import { Home } from "./home";
 import {Landing} from "@/pages/Landing";
 

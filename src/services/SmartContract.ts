@@ -2,6 +2,7 @@ import {GasInfo, GearApi, GearKeyring, ProgramMetadata} from "@gear-js/api";
 import {Account, AlertContainerFactory} from "@gear-js/react-hooks";
 import {SubmittableExtrinsic} from "@polkadot/api/promise/types";
 import {web3FromSource} from "@polkadot/extension-dapp";
+import { bool } from "@polkadot/types";
 import {AnyJson, ISubmittableResult} from "@polkadot/types/types";
 import React from "react";
 
@@ -32,7 +33,7 @@ export class SmartContract {
             width: isMobile ? "70%" : "30%",
             height: "5%",
             margin: "20px",
-            backgroundColor: "rgba(213,145,0,0.95)"
+            backgroundColor: "rgba(187, 128, 0, 0.95)"
         }
     };
 
@@ -64,10 +65,19 @@ export class SmartContract {
     public toFixed4 = (value: number): number => parseFloat(value.toFixed(4));
     public toPlank = (value: number): number => Math.round(value * this.plat);
     
-    public loadingAlert = (message: string, timeout: number, callback: () => void) => {
-        this.alert.loading(message, { style: this.alertStyle, timeout: timeout });
+    public loadingAlert = (message: string, callback: () => void) => {
+        let id = this.alert.loading(message, { style: this.alertStyle });
         callback();
+        return id;
     };
+
+    public errorAlert = (message: string) => {
+        return this.alert.error(message, { style: this.alertStyle, timeout: 1500 });
+    }
+
+    public closeAlert = (id: string) => {
+        this.alert.remove(id);
+    }
 
     public currentUser = () => this.account;
 
