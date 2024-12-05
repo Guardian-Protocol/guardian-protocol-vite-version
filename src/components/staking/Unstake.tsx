@@ -21,6 +21,7 @@ import {useBalance} from "@gear-js/react-hooks";
 import {AccountsModal} from "@/components/header/multiwallet/accounts-modal";
 import { formatDate } from "@/utils/date";
 import { UnstakeTokenInput } from "../shared/TokenInput/UnstakeTokenInput";
+import { UnstakeRequest } from "@/services/models/UnstakeRequest";
 
 type UnstakeProps = {
     account: any;
@@ -41,34 +42,38 @@ export function Unstake({
     balanceChanged, 
     setBalanceChanged 
 }: UnstakeProps) {
-
     const {balance} = useBalance(account?.address);
     const [amount, setAmount] = useState("0");
     const [gvaraValance, setGvaraBalance] = useState(0);
     const [rewardAfter, setRewardAfter] = useState(0);
     const [tokenValue, setTokenValue] = useState(0);
     const [isAmountInvalid, setIsAmountInvalid] = useState(false);
-    const [isButtonDisabled, setIsButtonDisabled] = useState(true);
-    const [alertId, setAlertId] = useState("");
+    const [isButtonEnabled, setIsButtonEnabled] = useState(true);
     const [refresh, setRefresh] = useState(false);
+    const [gas, setGas] = useState(0)
 
     const handleVaraUnstakeInputChange = async (event: any) => {
         const { value } = event.target;
-        if (!Number.isNaN(Number(value))) {
-
-            if (value.length === 0) {
-                setAmount("0");
-                setRewardAfter(0);
-                return;
-            }
-
-            setAmount((value.startsWith("0")) ? value.slice(1) : value);
-            setRewardAfter(contract.toFixed4(Number(value) * tokenValue));
-            setIsAmountInvalid(false);
+        if (Number.isNaN(Number(value))) {
+            return;
         }
+
         if (value === "") {
             setAmount("0")
+            setGas(0);
         }
+
+        if (value.length === 0) {
+            setAmount("0");
+            setRewardAfter(0);
+            setGas(0);
+            return;
+        }
+
+        setIsAmountInvalid(false);
+        setAmount((value.startsWith("0")) ? value.slice(1) : value);
+        setRewardAfter(contract.toFixed4(Number(value) * tokenValue));
+        setGas(Number(await contract.unstakeGas(contract.toPlank(Number(amount)))));
     }
 
     const maxAmountVaraUnstake = async () => {
@@ -76,48 +81,48 @@ export function Unstake({
             const reward = (Number(gvaraValance) * tokenValue);
             setAmount(String(Number(gvaraValance)));
             setRewardAfter(contract.toFixed4(reward));
+            setGas(Number(await contract.unstakeGas(contract.toPlank(Number(amount)))))
         }
     };
 
     const unstakeVara = async () => {
+        if (!isButtonEnabled) return false;
+
         if (Number(amount) > gvaraValance || Number(amount) <= 0) {
             setIsAmountInvalid(true);
             return;
         }
         setRefresh(true);
 
-        let alertId = contract.loadingAlert("Unstaking VARA", () => {
-            setIsButtonDisabled(false);
-        });
+        setIsButtonEnabled(false);
+        let id = contract.loadingAlert("Unstaking VARA");
 
-        setAlertId(alertId);
-
-        const unstakeValue = contract.toPlank(Number(amount));
-        const payload: AnyJson = {
-            Unstake: {
-                amount: unstakeValue,
-                reward: contract.toPlank(rewardAfter),
-                user: account.decodedAddress,
-                date: formatDate(new Date()),
-                liberationEra: await contract.getCurrentEra() + 14,
-            }
+        const payload: UnstakeRequest = {
+            amount: contract.toPlank(Number(amount)),
+            reward: contract.toPlank(rewardAfter),
+            user: account.decodedAddress,
+            date: formatDate(new Date()),
+            liberationEra: await contract.getCurrentEra() + 14,
         }
 
         try {
-            await contract.unstake(payload, 0, unstakeValue, () => {
+            await contract.unstake(payload, BigInt(gas), () => {
                 setRefresh(false);
-                setBalanceChanged(!balanceChanged);
-                setIsButtonDisabled(true);
+                setIsButtonEnabled(true);
                 setAmount("0");
                 setRewardAfter(0);
-                contract.closeAlert(alertId);
+                contract.closeAlert(id);
+
+                setTimeout(() => {
+                    setBalanceChanged(!balanceChanged);
+                }, 3000)
             });
         } catch {
-            setIsButtonDisabled(true);
+            setIsButtonEnabled(true);
             setAmount("0");
             setRewardAfter(0);
-        
-            contract.closeAlert(alertId);
+            contract.errorAlert("Operation cancelled")
+            contract.closeAlert(id);
         }
     }
 
@@ -127,15 +132,15 @@ export function Unstake({
         });
 
         contract.tokenValue().then((value) => {
-            setTokenValue(value / contract.plat);
+            setTokenValue(value);
         });
     }, [contract]);
 
     useEffect(() => {
         getBalance().then();
-    }, [getBalance, contract, balance, isButtonDisabled]);
+    }, [getBalance, contract, balance, isButtonEnabled]);
 
-    useEffect(() => { }, [balance, gvaraValance, isButtonDisabled, refresh]);
+    useEffect(() => { }, [balance, gvaraValance, isButtonEnabled, refresh, gas]);
 
     return (
         <TabPanel
@@ -181,6 +186,8 @@ export function Unstake({
                             handleInputChange={handleVaraUnstakeInputChange}
                             handleMaxButtonPressed={maxAmountVaraUnstake}
                             tokenValue={tokenValue}
+                            gas={gas}
+                            setGas={setGas}
                         />
 
                         <TabPanel
@@ -203,7 +210,7 @@ export function Unstake({
                         </TabPanel>
                         <Td width="100%" display="flex" justifyContent="center">
                             {account ? (
-                                isButtonDisabled ? (
+                                isButtonEnabled ? (
                                     <Button
                                         colorScheme="teal"
                                         size="lg"

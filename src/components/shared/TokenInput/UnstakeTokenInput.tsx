@@ -12,6 +12,8 @@ type StakeTokenInputProps = {
     handleInputChange: any;
     handleMaxButtonPressed: any;
     tokenValue: number;
+    gas: number;
+    setGas: any
 }
 
 export function UnstakeTokenInput({
@@ -21,9 +23,10 @@ export function UnstakeTokenInput({
     amount,
     handleInputChange,
     handleMaxButtonPressed,
-    tokenValue
+    tokenValue,
+    gas,
+    setGas
 }: StakeTokenInputProps) {
-
     const [isScreenSmall, setIsScreenSmall] = useState(window.innerWidth <= 768);
 
     useEffect(() => {
@@ -110,7 +113,7 @@ export function UnstakeTokenInput({
                         <Image src={Advertencia} boxSize="30px" mr={2} />
                         <Text                                 
                             display={{base: 'block', md: 'flex'}}
-                            whiteSpace={{base: 'pre-line', md: 'nowrap'}}>This transaction doesn't need sign and gas payment</Text>
+                            whiteSpace={{base: 'pre-line', md: 'nowrap'}}>The gas fee will be: {gas / 100000000000} VARA currently</Text>
                     </Flex>
                 </Td>
             </Grid>

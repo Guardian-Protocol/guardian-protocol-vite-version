@@ -21,6 +21,7 @@ type TabListStakingProps = {
 
 export function TabListStaking({account, accounts, contract, balanceChanged, setBalanceChanged}: TabListStakingProps) {
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [tabIndex, setTabIndex] = useState(0);
 
     const openModal = () => {
         setIsModalOpen(true);
@@ -30,13 +31,12 @@ export function TabListStaking({account, accounts, contract, balanceChanged, set
         setIsModalOpen(false);
     };
 
-    const [tabIndex, setTabIndex] = useState(0);
-
-    useEffect(() => { }, [tabIndex, account, isModalOpen, accounts]);
-
     const handleTabChange = (index: any) => {
         setTabIndex(index);
     };
+
+    
+    useEffect(() => { }, [tabIndex, account, isModalOpen, accounts]);
 
     return (
         <Tabs

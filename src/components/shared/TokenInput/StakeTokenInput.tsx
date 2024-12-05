@@ -39,65 +39,64 @@ export function StakeTokenInput({
 
     const handleInputChange = async (e: any) => {
         const { value } = e.target;
-        if (!Number.isNaN(Number(value))) {
-            setIsAmountInvalid(false);
-
-            if (value.length === 0) {
-                setAmount("0");
-                setGas(0);
-                setValueAfterToken(0);
-                return;
-            }
-
-            setAmount((value.startsWith("0")) ? value.slice(1) : value);
-            const tokenValue = await contract.tokenValue() / contract.plat
-            setValueAfterToken(contract.toFixed4(Number(value) / tokenValue));
-
-            const amount = Number(value) * contract.plat;
-            const gas = await contract.getGassLimit({ 
-                Stake: {
-                    amount: amount,
-                    gvara_amount: valueAfterToken * contract.plat,
-                    user: contract.currentUser()?.decodedAddress,
-                    date: formatDate(new Date()),
-                }
-            }, 0);
-
-            setGas(Number(gas));
+        if (Number.isNaN(Number(value))) {
+            return;
         }
+
         if (value === "") {
+            setGas(0);
+            setAmount("0");
+            setValueAfterToken(0);
+            return;
+        }
+
+        if (value.length === 0) {
             setAmount("0");
             setGas(0);
+            setValueAfterToken(0);
+            return;
         }
+
+        setIsAmountInvalid(false);
+        setAmount((value.startsWith("0")) ? value.slice(1) : value);
+        const tokenValue = await contract.tokenValue();
+        setValueAfterToken(contract.toFixed4(Number(value) / tokenValue));
+
+        const stakeValue = valueAfterToken * contract.PLANK;
+        const amount = Number(value) * contract.PLANK;
+        const payload = {
+            amount: amount,
+            gvaraAmount: stakeValue,
+            date: formatDate(new Date()),
+        }
+
+        setGas(Number(await contract.stakeGas(payload)));
     }
 
     const handleMaxPressed = async (e: any) => {
         if (Number(formattedBalance?.value) > 0 || formattedBalance?.value !== undefined) {
             let amount = Math.floor(Number(formattedBalance?.value) - 1);
+            setAmount(String(amount));
 
-            const tokenValue = await contract.tokenValue() / contract.plat;
+            const tokenValue = await contract.tokenValue();
             setValueAfterToken(contract.toFixed4(amount / tokenValue));
 
-            const stakeValue = valueAfterToken * contract.plat;
-            amount = amount * contract.plat;
+            const stakeValue = valueAfterToken * contract.PLANK;
+            amount = amount * contract.PLANK;
 
-            const gas = await contract.getGassLimit({ 
-                Stake: {
-                    amount: amount,
-                    gvara_amount: stakeValue,
-                    user: contract.currentUser()?.decodedAddress,
-                    date: formatDate(new Date()),
-                }
-            }, 0);
-
-            setAmount(String(Math.floor(Number(formattedBalance?.value) - 1)));
-            setGas(Number(gas));
+            const payload = {
+                amount: amount,
+                gvaraAmount: stakeValue,
+                date: formatDate(new Date()),
+            }
+  
+            setGas(Number(await contract.stakeGas(payload)));
         }
     }
 
     useEffect(() => {
         contract.tokenValue().then((value) => {
-            setFetchTokenValue(value / contract.plat);
+            setFetchTokenValue(value);
         });
 
         const mediaQuery = window.matchMedia("(max-width: 768px)");

@@ -1,39 +1,41 @@
-import {GasInfo, GearApi, GearKeyring, ProgramMetadata} from "@gear-js/api";
+import { GearApi } from "@gear-js/api";
 import {Account, AlertContainerFactory} from "@gear-js/react-hooks";
-import {SubmittableExtrinsic} from "@polkadot/api/promise/types";
 import {web3FromSource} from "@polkadot/extension-dapp";
-import { bool } from "@polkadot/types";
-import {AnyJson, ISubmittableResult} from "@polkadot/types/types";
+import {ISubmittableResult} from "@polkadot/types/types";
 import React from "react";
+import { Program } from "./clients/liquidity/program";
+import { TokenProgram } from "./clients/token/lib";
+import { StakeRequest } from "./models/StateRequest";
+import { UnstakeRequest } from "./models/UnstakeRequest";
+import { WithdrawRequest } from "./models/WithdrawRequest";
 
 type address = `0x${string}`
-type promiseXt = Promise<SubmittableExtrinsic | null>
 
 export class SmartContract {
-    public readonly plat: number = 1000000000000;
+    public readonly PLANK: number = 1000000000000;
 
     private api: GearApi;
+    public alert: AlertContainerFactory;
 
     private account: Account | null;
     private accounts: any;
 
-    public alert: AlertContainerFactory;
-    private readonly admin: address;
     private readonly stash: address;
 
-    private readonly source: address;
-    private readonly metadata: ProgramMetadata;
+    private readonly liquidityClient: Program;
+    private readonly tokenClient: TokenProgram;
 
-    private readonly ftSource: address;
-    private readonly ftMetadata: ProgramMetadata;
+    private readonly BASE_URL: string;
 
     public getAlertStyle(): React.CSSProperties{
         const isMobile = window.innerWidth < 720;
-        return{
+        return {
             width: isMobile ? "70%" : "30%",
             height: "5%",
             margin: "20px",
-            backgroundColor: "rgba(187, 128, 0, 0.95)"
+            backgroundColor: "black",
+            color: "white",
+            border: "2px solid rgba(187, 128, 0, 0.95)"
         }
     };
 
@@ -49,26 +51,20 @@ export class SmartContract {
         this.account = account;
         this.accounts = accounts;
         this.alert = alert;
-
-        const { seed } = GearKeyring.generateSeed(import.meta.env.VITE_ADMIN_NMONIC as address);
-        this.admin = seed
-
+        
         this.stash = import.meta.env.VITE_STASH_ADDRESS as address;
+        this.liquidityClient = new Program(api, import.meta.env.VITE_CONTRACT_ADDRESS as address);
+        this.tokenClient = new TokenProgram(api, import.meta.env.VITE_FT_CONTRACT_ADDRESS as address)
 
-        this.source = import.meta.env.VITE_CONTRACT_ADDRESS as address;
-        this.metadata = ProgramMetadata.from(import.meta.env.VITE_CONTRACT_METADATA as address);
-
-        this.ftSource = import.meta.env.VITE_FT_CONTRACT_ADDRESS as address;
-        this.ftMetadata = ProgramMetadata.from(import.meta.env.VITE_FT_CONTRACT_METADATA as address);
+        this.BASE_URL = import.meta.env.VITE_BASE_URL as string;
     }
 
     public toFixed4 = (value: number): number => parseFloat(value.toFixed(4));
-    public toPlank = (value: number): number => Math.round(value * this.plat);
+    public toPlank = (value: number): number => Math.round(value * this.PLANK);
+    public currentUser = () => this.account;
     
-    public loadingAlert = (message: string, callback: () => void) => {
-        let id = this.alert.loading(message, { style: this.alertStyle });
-        callback();
-        return id;
+    public loadingAlert = (message: string) => {
+        return this.alert.loading(message, { style: this.alertStyle });
     };
 
     public errorAlert = (message: string) => {
@@ -79,65 +75,90 @@ export class SmartContract {
         this.alert.remove(id);
     }
 
-    public currentUser = () => this.account;
+    public async stake(payload: StakeRequest, whenSuccess: () => void) {        
+        if (!this.validateAccount()) {
+            throw new Error("Invalid account")
+        }
 
-    public async stake(payload: AnyJson, amount: number, gasLimit: number, whenSuccess: () => void) {
-        const transferMessage = this.api.tx.balances.transferKeepAlive(this.stash, amount);
+        this.signer(this.api.tx.balances.transferKeepAlive(this.stash, payload.amount), () => {
+            this.alert.success("SUCCESSFUL TRANSACTION", {style: this.alertStyle});
+            whenSuccess();
 
-        await this.signer(transferMessage, async () => {
-            const stakeMessage = await this.contractMessage(payload, 0, gasLimit);
-            const stakeTx = this.api.tx.staking.bondExtra(amount);
-            const proxyTX = this.api.tx.proxy.proxy(this.stash, null, stakeTx);
-            const batch = this.api.tx.utility.batch([stakeMessage!, proxyTX]);
+            const requestOptions = {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            };
 
-            await this.proxySigner(batch, () => {
-                this.alert.success("SUCCESSFUL TRANSACTION", {style: this.alertStyle})
-                whenSuccess();
-            });
+            fetch(this.BASE_URL + "/guardian/stake", requestOptions);
         });
     }
 
-    public async unstake(payload: AnyJson, value: number, amount: number, whenSuccess: () => void) {
-        const unstakeMessage = await this.contractMessage(payload, 0, 0.6 * this.plat);
-        const unboundTX = this.api.tx.staking.unbond(amount);
-        const proxyTX = this.api.tx.proxy.proxy(this.stash, null, unboundTX);
-        const batch = this.api.tx.utility.batch([unstakeMessage!, proxyTX]);
+    public async unstake(payload: UnstakeRequest, gas: bigint, whenSuccess: () => void) {
+        const approve = this.tokenClient.vft.approve(
+            this.liquidityClient.programId!, 
+            payload.amount
+        );
 
-        await this.proxySigner(batch, async () => {
+        const approveGas = await approve.withAccount(this.account?.decodedAddress!).transactionFee();
+        const approveTx = approve.withGas(approveGas).extrinsic;
+
+        await this.signer(approveTx, async () => {
             this.alert.success("SUCCESSFUL TRANSACTION", {style: this.alertStyle})
             whenSuccess();
-        });
+
+            const requestOptions = {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload),
+            };
+
+            await fetch(this.BASE_URL + "/guardian/unstake", requestOptions);
+        }, true)
     }
 
-    public async withdraw(payload: AnyJson, liberationEra: number, amount: number) {
-        const currentEra = await this.getCurrentEra();
-        const withdrawMessage = await this.contractMessage(payload, 0, 0.06 * this.plat);
+    public withdraw(payload: WithdrawRequest) {
+        const requestOptions = {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+        }
 
-        await this.proxySigner(withdrawMessage!, async () => {
-            if (currentEra >= liberationEra) {
-                const withdrawTX = this.api.tx.staking.withdrawUnbonded(0);
-                const proxyTX = this.api.tx.proxy.proxy(this.stash, null, withdrawTX);
-                await this.proxySigner(proxyTX, async () => {
-                    const transferMessage = this.api.tx.balances.transferKeepAlive(this.account?.decodedAddress!, amount);
-                    const transferTX = this.api.tx.proxy.proxy(this.stash, null, transferMessage);
-                    await this.proxySigner(transferTX, () => {
-                        this.alert.success("SUCCESSFUL TRANSACTION", {style: this.alertStyle})
-                    });
-                });
-            } else {
-                this.alert.error("WITHDRAW IS NOT READY", {style: this.alertStyle})
-            }
-        });
+        fetch(this.BASE_URL + "/guardian/withdraw", requestOptions);
+    }
+
+    public async stakeGas(payload: any) {
+        return await this.liquidityClient.liquidity.stake(
+            payload.amount,
+            payload.gvaraAmount, 
+            this.account?.decodedAddress!, 
+            payload.date
+        ).withAccount(this.account?.decodedAddress!).transactionFee();
+    }
+
+    public async unstakeGas(amount: any) {
+        return await this.tokenClient.vft.approve(
+            this.liquidityClient.programId!, 
+            amount
+        ).withAccount(this.account?.decodedAddress!).transactionFee();
+    }
+
+    public async withdrawGas(payload: any) {
+        return await this.liquidityClient.liquidity.unstake(
+            payload.amount, 
+            payload.reward, 
+            payload.user, 
+            payload.date, 
+            payload.liberationEra
+        ).withAccount(this.account?.decodedAddress!).transactionFee();
     }
 
     public async getHistory() {
-        const result = (await this.getState({ TransactionsOf: this.account?.decodedAddress }));
-        return result === 0 ? 0 : result.asTransactions.toJSON();
+        return await this.liquidityClient.liquidity.transactionsOf(this.account?.decodedAddress!);
     }
 
     public async getUnstakeHistory() {
-        const result = (await this.getState({ UnstakesOf: this.account?.decodedAddress }));
-        return result === 0 ? 0 : result.asUnstakes.toJSON();
+        return await this.liquidityClient.liquidity.unstakesOf(this.account?.decodedAddress!);
     }
 
     public async getCurrentEra(): Promise<number> {
@@ -146,118 +167,29 @@ export class SmartContract {
     }
 
     public async balanceOf() {
-        const result = await this.getFTState();
-        
-        if (result === 0) {
-            return 0;
-        }
-
-        return result.toNumber() / this.plat;
+        return Number(await this.tokenClient.vft.balanceOf(this.account?.decodedAddress!)) / this.PLANK;
     }
 
     public async tokenValue() { 
-        const state = await this.api.programState.read({
-            programId: this.source,
-            payload: {
-                GuardianInfo: null
-            }
-        }, this.metadata);
-
-        return (state.toJSON() as any).ok.liquidInfo.tokenValue;
+        return Number(await this.liquidityClient.liquidity.tokenValue());
     }
 
-    public async getGassLimit(payload: AnyJson, amount: number) {
-        const calculatedGas = await this.api.program.calculateGas.handle(
-            this.account?.decodedAddress!,
-            this.source,
-            payload,
-            amount,
-            false,
-            this.metadata
-        );
-
-        const gasToSpend = (gasInfo: GasInfo): bigint => {
-            const gasHuman = gasInfo.toHuman();
-            const minLimit = gasHuman.min_limit?.toString() ?? "0";
-            const parsedGas = Number(minLimit.replaceAll(',', ''));
-            const gasFix = Math.round(parsedGas + parsedGas * 10);
-            const gasLimit: bigint = BigInt(gasFix);
-            return gasLimit;
-        }        
-
-        return gasToSpend(calculatedGas);
-    }
-
-    private async getState(payload: AnyJson = {}) {
-        const state = await this.api?.programState.read({
-            programId: this.source,
-            payload,
-        }, this.metadata);
-
-        if ((state as any).isErr) {
-            return 0;
-        }
-
-        return (state as any).asOk;
-    }
-
-
-    private async getFTState(): Promise<any> {
-        try {
-            const state = await this.api?.programState.read({
-                programId: this.ftSource,
-                payload: {
-                    BalanceOf: this.account?.decodedAddress
-                }
-            }, this.ftMetadata)
-
-            if ((state as any).isErr) {
-                return 0;
-            }
-
-            return (state as any).asOk.asBalance
-        } catch {}
-    }
-
-    private async signer(message: SubmittableExtrinsic, continueWith: () => void) {
+    private async signer(message: any, continueWith: () => void, isUnstake: boolean = false) {
         const injector = await web3FromSource(this.accounts[0]?.meta.source as string);
 
         await message.signAndSend(
             this.account?.address ?? this.alert.error("No account found", { style:  this.alertStyle }),
             { signer: injector.signer },
-            (result) => this.statusCallBack(result, continueWith)
+            (result: ISubmittableResult) => this.statusCallBack(result, continueWith, isUnstake)
         );
     }
 
-    private async proxySigner(message: SubmittableExtrinsic, continueWith: () => void) {
-        const keyring = await GearKeyring.fromSeed(this.admin);
-
-        await message.signAndSend(keyring, result => {
-            this.statusCallBack(result, continueWith)
-        });
-    }
-
-    private statusCallBack({status}: ISubmittableResult, continueWith: () => void) {
-        if (status.isInBlock) {
-            this.alert.info("Transaction is in block", {style: this.alertStyle})
-        } else if (status.isFinalized) {
+    private statusCallBack({status}: ISubmittableResult, continueWith: () => void, isUnstake: boolean) {
+        if (status.isInBlock && !isUnstake) {
+            continueWith();
+        } else if (status.isFinalized && isUnstake) {
             continueWith();
         }
-    }
-
-    private async contractMessage(payload: AnyJson, inputValue: number, gasLimit: number): promiseXt {
-        const message = {
-            destination: this.source,
-            payload,
-            gasLimit: BigInt(gasLimit),
-            value: inputValue
-        }
-
-        if (this.validateAccount()) {
-            return this.api.message.send(message, this.metadata)
-        }
-
-        return null;
     }
 
     private validateAccount(): boolean {
@@ -266,5 +198,4 @@ export class SmartContract {
             (visibleAccount: Account) => visibleAccount.address === localAccount?.address
         )
     }
-
 }

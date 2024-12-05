@@ -10,7 +10,7 @@ import { useEffect, useState } from "react";
 import { SmartContract } from "@/services/SmartContract";
 import VaraLogo from "@/assets/images/VaraLogo.png";
 import {Account, useBalance} from "@gear-js/react-hooks";
-import { AnyJson } from "@polkadot/types/types";
+import { WithdrawRequest } from "@/services/models/WithdrawRequest";
 
 type WithdrawProps = {
     contractCalls: SmartContract;
@@ -22,39 +22,36 @@ export function Withdraw({contractCalls, account}: WithdrawProps) {
     const [unestakeHistory, setUnestakeHistory] = useState<any[]>([]);
     const [currentEra, setCurrentEra] = useState<number>(0);
     const [isHistoryEmpty, setIsHistoryEmpty] = useState<boolean>(false);
+    const [update, setUpdate] = useState<boolean>(false);
 
-    const handleWithdraw = async (unestakeId: number, amount: number, liberationEra: number) => {
-        const payload: AnyJson = {
-            Withdraw: {
-                unstake_id: unestakeId,
-                user: contractCalls.currentUser()?.decodedAddress,
-                actual_era: currentEra,
-            }
+    const handleWithdraw = (unestakeId: number, amount: number, liberationEra: number, index: number) => {
+        const payload: WithdrawRequest = {
+            user: contractCalls.currentUser()?.decodedAddress!,
+            id: unestakeId,
+            liberationEra: liberationEra,
+            amount: amount
         }
 
-        await contractCalls.withdraw(payload, liberationEra, amount);
+        contractCalls.withdraw(payload);
+
+        setTimeout(() => {
+            setUpdate(!update);
+        }, 3000);
+
+        unestakeHistory.splice(index, 1);
     }
 
     useEffect(() => {
         contractCalls.getUnstakeHistory().then((history) => {
-            if(history !== 0) {
-
-                console.log(history.length)
-
-                if (history.length < 0) {
-                    setIsHistoryEmpty(true);
-                }
-
-                console.log(history)
-                setUnestakeHistory(history)
-            }
+            setUnestakeHistory(history);
         });
 
         contractCalls.getCurrentEra().then((era) => {
             setCurrentEra(era);
         });
-    }, [contractCalls, balance])
+    }, [contractCalls, balance]);
 
+    useEffect(() => {}, [update]);
 
     if (unestakeHistory.length === 0 || isHistoryEmpty) {
         return (
@@ -98,7 +95,7 @@ export function Withdraw({contractCalls, account}: WithdrawProps) {
                                         </Flex>
                                         
                                         <Flex align="center">
-                                            <Text fontWeight="bold">{history?.reward / contractCalls.plat}</Text>
+                                            <Text fontWeight="bold">{history?.reward / contractCalls.PLANK}</Text>
                                             <Image src={VaraLogo} boxSize="40px" ml={2} />
                                         </Flex>
                                     </Flex>
@@ -111,16 +108,23 @@ export function Withdraw({contractCalls, account}: WithdrawProps) {
                                         <Flex align="center">
                                             
                                             <Text  fontWeight="bold">
-                                                {Math.max(0, ((history?.liberationEra - currentEra) * 12) / 24)}
+                                                {Math.max(0, ((history?.liberation_era - currentEra) * 12) / 24)}
                                             </Text>
                                         </Flex>
                                     </Flex>
                                     <Flex justifyContent={'space-around'} mt={{base:'30px', md: '0'}}>
                                         <Button
-                                            onClick={async () =>{
+                                            onClick={() =>{
                                                 if (currentEra > history?.liberationEra) {
-                                                    await handleWithdraw(history?.unestakeId, history?.amount, history?.liberationEra);
-                                                } else {}
+                                                    handleWithdraw(
+                                                        history?.unestakeId, 
+                                                        history?.amount, 
+                                                        history?.liberationEra,
+                                                        index
+                                                    );
+                                                } else {
+                                                    contractCalls.errorAlert("You can't claim this yet");
+                                                }
                                             }}
                                             colorScheme="teal"
                                             size="lg"
@@ -139,7 +143,6 @@ export function Withdraw({contractCalls, account}: WithdrawProps) {
                     ))}
                 </Flex>
             </Box>
-
         </TabPanel>
     )
 }

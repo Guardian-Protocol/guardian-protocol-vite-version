@@ -17,9 +17,7 @@ export function History({contractCalls}: HistoryProps) {
     const [transactionHistory, setTransactionHistory] = useState<any[]>([]);
 
     contractCalls.getHistory().then((history) => {
-        if (history !== 0) {
-            setTransactionHistory(history);
-        }
+        setTransactionHistory(history);
     });
 
     if (transactionHistory?.length === 0) {
@@ -56,7 +54,7 @@ export function History({contractCalls}: HistoryProps) {
                                     </Flex>
                                     <Flex direction="column" alignItems="flex-end">
                                         <Flex align="center">
-                                            <Text fontSize={{base: 'md', md: 'lg'}} fontWeight="bold">{history.amount / contractCalls.plat}</Text>
+                                            <Text fontSize={{base: 'md', md: 'lg'}} fontWeight="bold">{history.amount / contractCalls.PLANK}</Text>
                                             <Image src={VaraLogo} boxSize="40px" ml={2} />
                                         </Flex>
                                     </Flex>
@@ -66,7 +64,7 @@ export function History({contractCalls}: HistoryProps) {
                                         <Text fontSize={{base: 'md', md: 'lg'}} fontWeight="bold">{history.date}</Text>
                                     </Flex>
                                     <Flex align="center" w={{base: '50%', md:"50%"}} justifyContent="center">
-                                        {history.tType === "stake" ?
+                                        {history.t_type === "stake" ?
                                             (<Text fontSize={{base: 'md', md: 'lg'}} fontWeight="bold">STAKE</Text>) : (<Text fontSize="lg" fontWeight="bold">UNSTAKE</Text>)
                                         }
                                     </Flex>

@@ -17,6 +17,7 @@ import {Account, useBalance, useBalanceFormat} from "@gear-js/react-hooks";
 import {AccountsModal} from "@/components/header/multiwallet/accounts-modal";
 import { formatDate } from "@/utils/date";
 import { StakeTokenInput } from "../shared/TokenInput/StakeTokenInput";
+import { StakeRequest } from "@/services/models/StateRequest";
 
 type StakeProps = {
     account: Account;
@@ -35,51 +36,50 @@ export function Stake({account, isModalOpen, openModal, closeModal, contract, ba
     const { getFormattedBalance } = useBalanceFormat();
     const { balance } = useBalance(account?.address);
     const [lockedBalance, setLockedBalance] = useState(0)
-    const [isButtonDisabled, setIsButtonDisabled] = useState(true);
+    const [isButtonEnabled, setIsButtonEnabled] = useState(true);
     const [isAmountInvalid, setIsAmountInvalid] = useState(false);
     const [valueAfterToken, setValueAfterToken] = useState(0);
-    const [alertId, setAlertId] = useState("")
     const [stakeAmount, setStakeAmount] = useState("0");
     const [gas, setGas] = useState(0);
 
     const formattedBalance: formatedBalance = balance ? getFormattedBalance(balance) : undefined
 
     const stakeVara = async () => {
+        if (!isButtonEnabled) return;
+
         if (Number(stakeAmount) > Math.floor(Number(formattedBalance?.value)) - 1 || Number(stakeAmount) <= 0) {
             setIsAmountInvalid(true);
             return;
         }
 
-        let alertId = contract.loadingAlert("Staking VARA - Dont leave the page", () => {
-            setIsButtonDisabled(false);
-        });
-
-        setAlertId(alertId);
+        setIsButtonEnabled(false);
+        let id = contract.loadingAlert("Staking VARA - Dont leave the page");
 
         const stakeValue = contract.toPlank(valueAfterToken);
         const amount = contract.toPlank(Number(stakeAmount));
 
-        const payload: AnyJson = {
-            Stake: {
-                amount: amount,
-                gvara_amount: stakeValue,
-                user: account.decodedAddress,
-                date: formatDate(new Date()),
-            }
+        const payload: StakeRequest = {
+            amount: amount,
+            tokenAmount: stakeValue,
+            user: contract.currentUser()?.decodedAddress!!,
+            date: formatDate(new Date()),
         }
 
         try {
-            await contract.stake(payload, amount, gas, () => {
-                setBalanceChanged(!balanceChanged)
-                setIsButtonDisabled(true);
-                contract.closeAlert(alertId);
+            await contract.stake(payload, () => {
+                setIsButtonEnabled(true);
+                contract.closeAlert(id);
                 setStakeAmount("0");
                 setValueAfterToken(0);
+
+                setTimeout(() => {
+                    setBalanceChanged(!balanceChanged);
+                }, 3500);
             });
         } catch {
             contract.errorAlert("Operation cancelled")
-            contract.closeAlert(alertId);
-            setIsButtonDisabled(true);
+            contract.closeAlert(id);
+            setIsButtonEnabled(true);
             setStakeAmount("0");
             setValueAfterToken(0);
         }
@@ -89,7 +89,7 @@ export function Stake({account, isModalOpen, openModal, closeModal, contract, ba
         contract.balanceOf().then((gBalance) => {
             setLockedBalance(contract.toFixed4(gBalance));
         })        
-    }, [contract, balance, balanceChanged, isButtonDisabled, stakeAmount]);
+    }, [contract, balance, balanceChanged, isButtonEnabled, stakeAmount]);
 
     return (
         <TabPanel
@@ -209,7 +209,7 @@ export function Stake({account, isModalOpen, openModal, closeModal, contract, ba
                                         color: "black",
                                         background: "#F8AD18",
                                         width: "240px",
-                                        opacity: isButtonDisabled ? 1.0 : 0.5
+                                        opacity: isButtonEnabled ? 1.0 : 0.5
                                     }}
                                     onClick={stakeVara}
                                 >
