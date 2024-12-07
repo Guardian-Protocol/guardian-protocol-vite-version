@@ -127,7 +127,7 @@ export function UnstakeTokenInput({
                 >
                     <Flex align="center" justifyContent="flex-end">
                         <Image src={Advertencia} boxSize="30px" mr={2} />
-                        <Text> 1 VARA = {tokenValue} gVARA</Text>
+                        <Text> 1 VARA = {tokenValue} VARA</Text>
                     </Flex>
                 </Td>
             </Grid>

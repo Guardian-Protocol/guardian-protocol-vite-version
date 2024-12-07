@@ -80,7 +80,7 @@ export class SmartContract {
             throw new Error("Invalid account")
         }
 
-        this.signer(this.api.tx.balances.transferKeepAlive(this.stash, payload.amount), () => {
+        this.signer(this.api.tx.balances.transferKeepAlive(this.stash, payload.amount) as any, () => {
             this.alert.success("SUCCESSFUL TRANSACTION", {style: this.alertStyle});
             whenSuccess();
 
@@ -101,7 +101,7 @@ export class SmartContract {
         );
 
         const approveGas = await approve.withAccount(this.account?.decodedAddress!).transactionFee();
-        const approveTx = approve.withGas(approveGas).extrinsic;
+        const approveTx = approve.withGas(approveGas).extrinsic as any;
 
         await this.signer(approveTx, async () => {
             this.alert.success("SUCCESSFUL TRANSACTION", {style: this.alertStyle})
