@@ -84,9 +84,15 @@ export class SmartContract {
             this.alert.success("SUCCESSFUL TRANSACTION", {style: this.alertStyle});
             whenSuccess();
 
+            const requestMode: RequestMode = "cors";
+
             const requestOptions = {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                mode: requestMode,
+                headers: { 
+                    "Access-Control-Allow-Origin": "*",
+                    "Content-Type": "application/json" 
+                },
                 body: JSON.stringify(payload),
             };
 

@@ -1,0 +1,40 @@
+name: deploy action
+
+on:
+    push:
+        branches:
+            - main
+
+jobs:
+    build:
+        name: Build and Deploy
+        runs-on: ubuntu-22.04
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v2
+            
+            - name: Set up Node.js
+              uses: actions/setup-node@v2
+              with:
+                node-version: '20.9.0'
+            
+            - name: install yarn
+              run: npm install -g corepack && corepack enable && yarn set version 4.0.1
+            
+            - name: install dependencies
+              run: yarn install --immutable
+
+            - name: create env
+              run: echo ${{ secrets.ENV }} > .env
+
+            - name: build
+              run: npm run build
+
+            - name: upload to server
+              uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+              with:
+                server: ${{ secrets.HOST }}
+                username: ${{ secrets.FTP_USERNAME }}
+                password: ${{ secrets.FTP_PASSWORD }}
+                local-dir: build/
+                server-dir: ~/testnet.guardiandefi.xyz/
