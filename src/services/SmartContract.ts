@@ -112,6 +112,7 @@ export class SmartContract {
         await this.signer(approveTx, async () => {
             this.alert.success("SUCCESSFUL TRANSACTION", {style: this.alertStyle})
             whenSuccess();
+            
 
             const requestOptions = {
                 method: "POST",
