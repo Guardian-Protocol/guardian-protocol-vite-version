@@ -89,7 +89,7 @@ const AccountsModal = ({ close }: Props) => {
                 (walletAccounts?.length ? (
                     <ul>{getAccounts()}</ul>
                 ) : (
-                    <Heading color="white" size="xs">
+                    <Heading style={{color: '#959595'}} size="xs">
                         No accounts found. Please open your Polkadot extension and
                         create a new account or import existing. Then reload this
                         page.
@@ -103,7 +103,8 @@ const AccountsModal = ({ close }: Props) => {
                 _hover={{ backgroundColor: "transparent" }}
                 color={"white"}
                 onClick={resetWalletId}
-                margin={"10px"}
+                marginTop={"15px"}
+                marginRight={"15px"}
               > {wallet.name} </ButtonC>
             )}
 

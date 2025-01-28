@@ -31,8 +31,6 @@ export class SmartContract {
         const isMobile = window.innerWidth < 720;
         return {
             width: isMobile ? "70%" : "30%",
-            height: "5%",
-            margin: "20px",
             backgroundColor: "black",
             color: "white",
             border: "2px solid rgba(187, 128, 0, 0.95)"
@@ -63,6 +61,18 @@ export class SmartContract {
     public toPlank = (value: number): number => Math.round(value * this.PLANK);
     public currentUser = () => this.account;
     
+    private setupBeforeUnloadListener() {
+        window.addEventListener('beforeunload', this.handleBeforeUnload);
+    }
+
+    private removeBeforeUnloadListener() {
+        window.removeEventListener('beforeunload', this.handleBeforeUnload);
+    }
+
+    private handleBeforeUnload(event: BeforeUnloadEvent) {
+        event.preventDefault();
+    }
+
     public loadingAlert = (message: string) => {
         return this.alert.loading(message, { style: this.alertStyle });
     };
@@ -192,10 +202,15 @@ export class SmartContract {
     }
 
     private statusCallBack({status}: ISubmittableResult, continueWith: () => void, isUnstake: boolean) {
-        if (status.isInBlock && !isUnstake) {
+        this.setupBeforeUnloadListener();
+        if (status.isFinalized) {
+            this.removeBeforeUnloadListener();
             continueWith();
-        } else if (status.isFinalized && isUnstake) {
-            continueWith();
+        }else if (status.isDropped || status.isInvalid || status.isUsurped) {
+            this.removeBeforeUnloadListener();
+            this.errorAlert("Transaction failed");
+        }else{
+
         }
     }
 
