@@ -9,14 +9,17 @@ export function Alert({ alert, close }: AlertProps) {
   const { type, title, style, isClosed } = options;
 
   return (
-    <div className={styles.alert} style={style}>
-      <div className={clsx(styles.header, styles[type])}>{title || type}</div>
-      <div className={styles.body}>{content}</div>
-      {isClosed && (
-        <Button variant="text" className={styles.button} onClick={close}>
-          <CrossIcon width={20} height={20} />
-        </Button>
-      )}
+    <div className={styles.container}>
+      <div className={styles.alert} style={style}>
+        <div className={clsx(styles.header, styles[type])}>
+          <p>{title || type}</p>
+        </div>
+        {isClosed && (
+          <Button variant="text" className={styles.button} onClick={close}>
+            <CrossIcon width={20} height={20} />
+          </Button>
+        )}
+      </div>
     </div>
   );
 }
