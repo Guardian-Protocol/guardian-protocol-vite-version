@@ -67,7 +67,7 @@ function AlertProvider({ children }: ProviderProps) {
   );
 }
 
-const providers = [BrowserRouter, DAppContextProvider,AlertProvider, ApiProvider, AccountProvider];
+const providers = [BrowserRouter, DAppContextProvider, AlertProvider, ApiProvider, AccountProvider];
 
 function withProviders(Component: ComponentType) {
   return () => providers.reduceRight((children, Provider) => <Provider>{children}</Provider>, <Component />);

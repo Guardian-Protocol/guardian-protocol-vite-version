@@ -1,9 +1,12 @@
 import { HexString } from '@gear-js/api';
 
+
 interface ContractData {
   programId: HexString,
   metadata: string
 }
+
+export const SIGNLESS_STORAGE_KEY = 'signless';
 
 export const ACCOUNT_ID_LOCAL_STORAGE_KEY = 'account';
 

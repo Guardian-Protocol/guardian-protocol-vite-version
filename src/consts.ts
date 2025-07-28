@@ -1,5 +1,5 @@
 const ADDRESS = {
-    NODE: process.env.REACT_APP_NODE_ADDRESS as string,
+    NODE: ' wss://testnet.vara.network'//process.env.REACT_APP_NODE_ADDRESS as string,
   };
   
   const LOCAL_STORAGE = {

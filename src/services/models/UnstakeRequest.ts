@@ -1,7 +1,10 @@
+import { ActorId } from "sails-js";
+
 export interface UnstakeRequest {
     amount: number;
-    reward: number;
-    user: `0x${string}`;
-    date: string;
-    liberationEra: number;
+    sessionForAccount: ActorId | null
+    // reward: number;
+    // user: `0x${string}`;
+    // date: string;
+    // liberationEra: number;
 }

@@ -14,14 +14,21 @@ import {
 } from "@chakra-ui/react";
 import {useCallback, useEffect, useState} from "react";
 import { SmartContract } from "@/services/SmartContract";
-import { AnyJson } from "@polkadot/types/types";
 import VaraLogo from "@/assets/images/VaraLogo.png";
 import Advertencia from "@/assets/images/icons/advertencia.svg";
-import {useBalance} from "@gear-js/react-hooks";
+import { useBalance} from "@gear-js/react-hooks";
 import {AccountsModal} from "@/components/header/multiwallet/accounts-modal";
-import { formatDate } from "@/utils/date";
 import { UnstakeTokenInput } from "../shared/TokenInput/UnstakeTokenInput";
 import { UnstakeRequest } from "@/services/models/UnstakeRequest";
+import { KeyringPair } from '@polkadot/keyring/types';
+import { useApi } from "@gear-js/react-hooks"; 
+import { decodeAddress } from "@gear-js/api";
+import { 
+    useVoucherUtils,
+    useSignlessUtils 
+} from "@/app/hooks";
+import { getStorage } from "@/app/utils";
+
 
 type UnstakeProps = {
     account: any;
@@ -42,6 +49,8 @@ export function Unstake({
     balanceChanged, 
     setBalanceChanged 
 }: UnstakeProps) {
+    const sponsorName = import.meta.env.VITE_SPONSOR_NAME;
+    const sponsorMnemonic = import.meta.env.VITE_SPONSOR_MNEMONIC;
     const {balance} = useBalance(account?.address);
     const [amount, setAmount] = useState("0");
     const [gvaraValance, setGvaraBalance] = useState(0);
@@ -50,7 +59,17 @@ export function Unstake({
     const [isAmountInvalid, setIsAmountInvalid] = useState(false);
     const [isButtonEnabled, setIsButtonEnabled] = useState(true);
     const [refresh, setRefresh] = useState(false);
-    const [gas, setGas] = useState(0)
+    const [gas, setGas] = useState(0);
+    const{ api, isApiReady } = useApi();
+
+    const {
+        pair,
+        storageVoucher,
+        createNewSession,
+        unlockPair
+    } = useSignlessUtils(contract, null);
+
+    const { checkVoucherForUpdates, vouchersInContract } = useVoucherUtils(sponsorName, sponsorMnemonic);
 
     const handleVaraUnstakeInputChange = async (event: any) => {
         const { value } = event.target;
@@ -81,11 +100,12 @@ export function Unstake({
             const reward = (Number(gvaraValance) * tokenValue);
             setAmount(String(Number(gvaraValance)));
             setRewardAfter(contract.toFixed4(reward));
-            setGas(Number(await contract.unstakeGas(contract.toPlank(Number(amount)))))
+            setGas(Number(await contract.unstakeGas(contract.toPlank(Number(amount)))));
         }
     };
 
     const unstakeVara = async () => {
+        
         if (!isButtonEnabled) return false;
 
         if (Number(amount) > gvaraValance || Number(amount) <= 0) {
@@ -97,26 +117,60 @@ export function Unstake({
         setIsButtonEnabled(false);
         let id = contract.loadingAlert("Unstaking VARA");
 
+        let pair_data: [KeyringPair | undefined, `0x${string}` | undefined] = [undefined, undefined];
+
+        let storagePair = getStorage()[account.address];
+
+        if (!storagePair) {
+            pair_data = await createNewSession(account.decodedAddress);
+        } else {
+            const pairToUse = !pair ? unlockPair(account.decodedAddress) : pair;
+
+            const voucherId = storageVoucher 
+                ? storageVoucher.id 
+                : (await vouchersInContract(
+                    contract.getContractAddress,
+                    decodeAddress(pairToUse.address)
+                  ))[0];
+
+            pair_data = [ pairToUse, voucherId ];
+
+            await contract.checkSession(pairToUse, account.decodedAddress);
+        }
+
+        await checkVoucherForUpdates(
+            decodeAddress(pair_data[0]?.address!),
+            pair_data[1]!,
+            10,
+            1_200,
+            3,
+            () => {},
+            () => {}
+        );
+
         const payload: UnstakeRequest = {
             amount: contract.toPlank(Number(amount)),
-            reward: contract.toPlank(rewardAfter),
-            user: account.decodedAddress,
-            date: formatDate(new Date()),
-            liberationEra: await contract.getCurrentEra() + 14,
+            sessionForAccount: account.decodedAddress
         }
 
         try {
-            await contract.unstake(payload, BigInt(gas), () => {
-                setRefresh(false);
-                setIsButtonEnabled(true);
-                setAmount("0");
-                setRewardAfter(0);
-                contract.closeAlert(id);
+            await contract.unstake(
+                payload, 
+                () => {
+                    setRefresh(false);
+                    setIsButtonEnabled(true);
+                    setAmount("0");
+                    setRewardAfter(0);
+                    contract.closeAlert(id);
 
-                setTimeout(() => {
-                    setBalanceChanged(!balanceChanged);
-                }, 3000)
-            });
+                    setTimeout(() => {
+                        setBalanceChanged(!balanceChanged);
+                    }, 3000)
+                },
+                pair_data[0]!,
+                pair_data[1]!,
+                account.decodedAddress
+            );
         } catch {
             setIsButtonEnabled(true);
             setAmount("0");

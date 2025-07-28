@@ -12,19 +12,72 @@ import VaraLogo from "@/assets/images/VaraLogo.png";
 import {Account, useBalance} from "@gear-js/react-hooks";
 import { WithdrawRequest } from "@/services/models/WithdrawRequest";
 
+
+import { KeyringPair } from '@polkadot/keyring/types';
+import { decodeAddress } from "@gear-js/api";
+import { 
+    useVoucherUtils,
+    useSignlessUtils 
+} from "@/app/hooks";
+import { getStorage } from "@/app/utils";
+
+
+
 type WithdrawProps = {
     contractCalls: SmartContract;
     account: Account
 };
 
 export function Withdraw({contractCalls, account}: WithdrawProps) {
+    const sponsorName = import.meta.env.VITE_SPONSOR_NAME;
+    const sponsorMnemonic = import.meta.env.VITE_SPONSOR_MNEMONIC;
     const { balance } = useBalance(account?.address)
     const [unestakeHistory, setUnestakeHistory] = useState<any[]>([]);
     const [currentEra, setCurrentEra] = useState<number>(0);
     const [isHistoryEmpty, setIsHistoryEmpty] = useState<boolean>(false);
     const [update, setUpdate] = useState<boolean>(false);
 
-    const handleWithdraw = (unestakeId: number, amount: number, liberationEra: number, index: number) => {
+    const {
+        pair,
+        voucher,
+        storageVoucher,
+        createNewSession,
+        unlockPair
+    } = useSignlessUtils(contractCalls, null);
+
+    const { checkVoucherForUpdates, vouchersInContract } = useVoucherUtils(sponsorName, sponsorMnemonic);
+
+    const handleWithdraw = async (unestakeId: number, amount: number, liberationEra: number, index: number) => {
+        let pair_data: [KeyringPair | undefined, `0x${string}` | undefined] = [undefined, undefined];
+
+        let storagePair = getStorage()[account.address];
+
+        if (!storagePair) {
+            pair_data = await createNewSession(account.decodedAddress);
+        } else {
+            const pairToUse = !pair ? unlockPair(account.decodedAddress) : pair;
+            const voucherId = storageVoucher 
+                ? storageVoucher.id 
+                : (await vouchersInContract(
+                    contractCalls.getContractAddress,
+                    decodeAddress(pairToUse.address)
+                  ))[0];
+
+            pair_data = [ pairToUse, voucherId ];
+
+            await contractCalls.checkSession(pairToUse, account.decodedAddress);
+        }
+
+        await checkVoucherForUpdates(
+            decodeAddress(pair_data[0]?.address!),
+            pair_data[1]!,
+            10,
+            1_200,
+            3,
+            () => {},
+            () => {}
+        );
+
         const payload: WithdrawRequest = {
             user: contractCalls.currentUser()?.decodedAddress!,
             id: unestakeId,
@@ -32,7 +85,11 @@ export function Withdraw({contractCalls, account}: WithdrawProps) {
             amount: amount
         }
 
-        contractCalls.withdraw(payload);
+        await contractCalls.withdraw(
+            payload,
+            pair_data[0]!,
+            pair_data[1]!
+        );
 
         setTimeout(() => {
             setUpdate(!update);
@@ -43,6 +100,7 @@ export function Withdraw({contractCalls, account}: WithdrawProps) {
 
     useEffect(() => {
         contractCalls.getUnstakeHistory().then((history) => {
+
             setUnestakeHistory(history);
         });
 
@@ -78,7 +136,7 @@ export function Withdraw({contractCalls, account}: WithdrawProps) {
                 <Flex direction="column" w="100%">
                     {unestakeHistory.map((history, index) => (
                         <Box
-                            key={history.unestakeId}
+                            key={`${history.unestakeId}-${index}`}
                             borderWidth="3px"
                             borderRadius="lg"
                             overflow="hidden"

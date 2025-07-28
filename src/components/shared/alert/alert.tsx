@@ -14,6 +14,9 @@ export function Alert({ alert, close }: AlertProps) {
         <div className={clsx(styles.header, styles[type])}>
           <p>{title || type}</p>
         </div>
+        <div className={styles.content}>
+          {alert.content}
+        </div>
         {isClosed && (
           <Button variant="text" className={styles.button} onClick={close}>
             <CrossIcon width={20} height={20} />

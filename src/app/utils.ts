@@ -2,6 +2,16 @@ import { AlertContainerFactory, withoutCommas } from '@gear-js/react-hooks';
 import { InjectedAccountWithMeta } from '@polkadot/extension-inject/types';
 import { ACCOUNT_ID_LOCAL_STORAGE_KEY } from '@/app/consts';
 import { HexString } from '@polkadot/util/types';
+import { GearApi, GearKeyring } from '@gear-js/api';
+import { KeyringPair, KeyringPair$Json } from '@polkadot/keyring/types';
+import { Signer } from '@polkadot/api/types';
+import { SubmittableResult } from '@polkadot/api';
+
+import { SIGNLESS_STORAGE_KEY } from '@/app/consts'; 
+
+export const getStorage = () => JSON.parse(localStorage[SIGNLESS_STORAGE_KEY] || '{}') as Storage;
+export const getUnlockedPair = (pair: KeyringPair$Json, password: string) => GearKeyring.fromJson(pair, password);
+
 
 export function formatDate(input: string | number): string {
   const date = new Date(input);
@@ -88,3 +98,56 @@ export const prettyAddress = (address: HexString) => {
 export function toNumber(value: string) {
   return +withoutCommas(value);
 }
+
+export async function getProxies(api: GearApi, walletAddress: string) {
+    const proxies = await api.query.proxy.proxies(walletAddress);
+    const [ proxy, deposit ] = proxies.toHuman() as any[];
+
+    return {
+        proxies: proxy.map(({delegate, proxyType, delay}: any) => ({
+            delegate,
+            proxyType,
+            delay
+        })),
+        deposit
+    };
+}
+
+export async function addProxy(
+    api: GearApi,
+    signer: Signer,       
+    userAddress: `0x${string}`,      
+    proxyAddress: string,
+    proxyType: 'Any' | 'Staking' | 'Governance' | 'NonTransfer',
+    delay: number = 0
+): Promise<void> {
+    const tx = api.tx.proxy.addProxy(proxyAddress, proxyType, delay);
+
+    await tx.signAndSend(userAddress, { signer }, ({ status, dispatchError }: SubmittableResult) => {
+      if (dispatchError) {
+          console.error('Fail while adding the proxy:', dispatchError.toString());
+      } else if (status.isInBlock) {
+          console.log('Proxy added in block:', status.asInBlock.toHex());
+      }
+    });
+}
+
+export async function removeProxy(
+    api: GearApi,
+    signer: Signer,
+    userAddress: `0x${string}`,
+    proxyAddress: string,
+    proxyType: 'Any' | 'Staking' | 'Governance' | 'NonTransfer',
+    delay: number = 0
+): Promise<void> {
+    const tx = api.tx.proxy.removeProxy(proxyAddress, proxyType, delay);
+
+    await tx.signAndSend(userAddress, { signer }, ({ status, dispatchError }: SubmittableResult) => {
+        if (dispatchError) {
+            console.error('Fail while deleting proxy:', dispatchError.toString());
+        } else if (status.isInBlock) {
+            console.log('Proxy deleted in block:', status.asInBlock.toHex());
+        }
+    });
+}
+

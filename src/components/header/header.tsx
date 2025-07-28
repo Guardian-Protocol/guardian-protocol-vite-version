@@ -14,7 +14,9 @@ export function Header({balanceChanged}: any) {
                       <Image src={GuardianLogo} width={{base:'90px', md:'140px'}} alt="Logo" className={styles.logo}/>
                   </Link>
               </h1>
-              <MultiWallet balanceChanged={balanceChanged} />
+                <Flex justifyContent={'end'} width={'100%'} alignContent={'end'}>
+                    <MultiWallet balanceChanged={balanceChanged} />
+                </Flex>
           </Flex>
       </header>
   );

@@ -24,15 +24,15 @@ function Home ({setBalanceChanged, balanceChanged}: any) {
                 }}
             >
                 <Box h="90px" />
-                <Center>
-                    <TabListStaking
-                        account={account}
-                        accounts={accounts}
-                        contract={contract}
-                        setBalanceChanged={setBalanceChanged}
-                        balanceChanged={balanceChanged}
-                    />
-                </Center>
+                    <Center>
+                        <TabListStaking
+                            account={account}
+                            accounts={accounts}
+                            contract={contract}
+                            setBalanceChanged={setBalanceChanged}
+                            balanceChanged={balanceChanged}
+                        />
+                    </Center>
                 <Box h="90px" />
             </GridItem>
         </Box>

@@ -32,6 +32,16 @@ export function History({contractCalls}: HistoryProps) {
         );
     }
 
+    const formatHistory = (history: string): string => {
+        const date = new Date(Number(history));
+        
+        const days = date.getDate();       
+        const months = date.getMonth() + 1;
+        const year = date.getFullYear();  
+
+        return `${days}-${months}-${year}`;
+    }
+
     return (
         <TabPanel
             display="flex"
@@ -44,7 +54,7 @@ export function History({contractCalls}: HistoryProps) {
             <Box w='100%' h="100%" mb='8'>
                 <Flex direction="column" w="100%">
                     {transactionHistory.map((history, index) => (
-                        <Box key={history.transactionTime} borderWidth="3px" borderRadius="lg" overflow="hidden" w="100%" borderColor="#F8AD18" bg="#131111" mt={index > 0 ? 4 : 0}>
+                        <Box key={`${history.transactionTime}-${index}`} borderWidth="3px" borderRadius="lg" overflow="hidden" w="100%" borderColor="#F8AD18" bg="#131111" mt={index > 0 ? 4 : 0}>
                             <Flex justify="space-between" p={5} align="center" direction={{base: 'column', md: 'row'}} w="100%">
                                 <Flex align="center" w={{base: '100%', md: '70%'}} justify="space-between">
                                     <Flex direction="column" justify="space-between">
@@ -61,7 +71,7 @@ export function History({contractCalls}: HistoryProps) {
                                 </Flex>
                                 <Flex direction={{base:'row', md:'row'}} w={{base:'100%', md:'60%'}}  mt={{base: '10px', md: 0}}>
                                     <Flex align="center" w={{base: '50%', md:"50%"}} justifyContent="center">
-                                        <Text fontSize={{base: 'md', md: 'lg'}} fontWeight="bold">{history.date}</Text>
+                                        <Text fontSize={{base: 'md', md: 'lg'}} fontWeight="bold">{formatHistory(history.date)}</Text>
                                     </Flex>
                                     <Flex align="center" w={{base: '50%', md:"50%"}} justifyContent="center">
                                         {history.t_type === "stake" ?

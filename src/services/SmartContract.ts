@@ -1,13 +1,14 @@
-import { GearApi } from "@gear-js/api";
+import { decodeAddress, GearApi, GearKeyring, HexString } from "@gear-js/api";
 import {Account, AlertContainerFactory} from "@gear-js/react-hooks";
 import {web3FromSource} from "@polkadot/extension-dapp";
 import {ISubmittableResult} from "@polkadot/types/types";
 import React from "react";
-import { Program } from "./clients/liquidity/program";
+import { SailsProgram } from "./clients/liquidity/program";
 import { TokenProgram } from "./clients/token/lib";
 import { StakeRequest } from "./models/StateRequest";
 import { UnstakeRequest } from "./models/UnstakeRequest";
 import { WithdrawRequest } from "./models/WithdrawRequest";
+import { KeyringPair } from '@polkadot/keyring/types';
 
 type address = `0x${string}`
 
@@ -21,8 +22,9 @@ export class SmartContract {
     private accounts: any;
 
     private readonly stash: address;
+    private readonly contractAddress: address;
 
-    private readonly liquidityClient: Program;
+    private readonly liquidityClient: SailsProgram;
     private readonly tokenClient: TokenProgram;
 
     private readonly BASE_URL: string;
@@ -43,7 +45,7 @@ export class SmartContract {
         api: GearApi,
         account: Account,
         accounts: any,
-        alert: AlertContainerFactory,
+        alert: AlertContainerFactory
     ) {
         this.api = api;
         this.account = account;
@@ -51,10 +53,11 @@ export class SmartContract {
         this.alert = alert;
         
         this.stash = import.meta.env.VITE_STASH_ADDRESS as address;
-        this.liquidityClient = new Program(api, import.meta.env.VITE_CONTRACT_ADDRESS as address);
+        this.liquidityClient = new SailsProgram(api, import.meta.env.VITE_CONTRACT_ADDRESS as address);
         this.tokenClient = new TokenProgram(api, import.meta.env.VITE_FT_CONTRACT_ADDRESS as address)
 
         this.BASE_URL = import.meta.env.VITE_BASE_URL as string;
+        this.contractAddress = import.meta.env.VITE_CONTRACT_ADDRESS as address;
     }
 
     public toFixed4 = (value: number): number => parseFloat(value.toFixed(4));
@@ -85,72 +88,250 @@ export class SmartContract {
         this.alert.remove(id);
     }
 
-    public async stake(payload: StakeRequest, whenSuccess: () => void) {        
+    public async transferTokensToSessionFromMenemonic(sponsorName: string, sponsorMnemonic: string, sessionAddress: string) {
+        return new Promise<void>(async resolve => {
+            const { seed } = GearKeyring.generateSeed(sponsorMnemonic);
+            const keyring = await GearKeyring.fromSeed(seed, sponsorName);
+
+            const transfetTx = this.api.tx.balances.transferKeepAlive(sessionAddress, 2_000_000_000_000);
+            await transfetTx.signAndSend(keyring, (result) => {
+                this.statusCallBack(
+                    result, 
+                    () => {
+                        resolve();
+                    }, 
+                    false
+                );
+            });
+        });
+    }
+
+    public async checkSession(sessionSigner: KeyringPair, userAddress: HexString) {
+        const sessions = await this.liquidityClient.session.sessionForTheAccount(userAddress, userAddress);
+
+        if (!sessions) {
+            await this.createSession(sessionSigner, userAddress);
+        }
+    }
+
+    public async createSession(sessionSigner: KeyringPair, userAddress: HexString) {
+        return new Promise<void>(async (resolve) => {
+            // const transferTx = this.api.tx.balances.transferKeepAlive(sessionSigner.address, 12_000_000_000_000);
+            const sessionAddress = decodeAddress(sessionSigner.address);
+
+            const signatureData : SignatureData = {
+                key: sessionAddress,
+                duration: 1800001,
+                allowed_actions: ["stake", "unstake", "withdraw"]
+            }
+
+            let sessionTx = this.liquidityClient.session.createSession(
+                signatureData,
+                null
+            );
+
+            await sessionTx.calculateGas(true, 10);
+
+            const tx = sessionTx.extrinsic;
+
+            // const proxyTransferTx = this.api.tx.proxy.proxy(userAddress, null, transferTx);
+            const proxySessionTx = this.api.tx.proxy.proxy(userAddress, null, tx);
+
+            // const batch = this.api.tx.utility.batch([proxyTransferTx, proxySessionTx]);
+            const batch = this.api.tx.utility.batch([proxySessionTx]);
+            await batch.signAndSend(sessionSigner, (result) => {
+                this.statusCallBack(
+                    result, 
+                    () => {
+                        resolve();
+                    }, 
+                    false
+                )}
+            );
+        });
+    }
+
+    public async aproveTokensProxy(sessionSigner: KeyringPair, userAddress: HexString, amount: number) {
+        return new Promise<void>(async resolve => {
+            const approve_tx = this.tokenClient.vft.approve(
+                this.liquidityClient.programId!,
+                amount
+            );
+
+            await approve_tx.calculateGas(true, 10);
+            
+            const proxy_tx = this.api.tx.proxy.proxy(userAddress, null, approve_tx.extrinsic);
+
+            await proxy_tx.signAndSend(
+                sessionSigner,
+                (result) => {
+                    this.statusCallBack(
+                        result, 
+                        () => {
+                            resolve();
+                        }, 
+                        false
+                    )
+                }
+            );
+        });
+    }
+
+
+    // TODO: cambiar esta parte ya que no puede llamar a signer
+    public async stake(payload: StakeRequest, whenSuccess: () => void, sessionSigner?: KeyringPair, userAddress?: HexString, sponsorName?: string, sponsorMnemonic?: string) {     
+        return new Promise<void>(async resolve => {   
+            if (!this.validateAccount()) {
+                throw new Error("Invalid account");
+            }
+
+            let signer;
+
+            if (!sessionSigner) {
+                const {signer: userSigner} = await web3FromSource(this.accounts[0]?.meta.source as string);
+                signer = userSigner;
+            }
+
+            let stake_tx = this.liquidityClient.liquidity.stake(payload.sessionForAccount);
+            stake_tx.withValue(BigInt(payload.amount));
+            stake_tx = await stake_tx.calculateGas(true, 20);
+
+            if (sessionSigner && userAddress) {
+                stake_tx.withAccount(sessionSigner.address);
+                const tx = stake_tx.extrinsic;
+                await this.transferTokensToSessionFromMenemonic(sponsorName!, sponsorMnemonic!, sessionSigner.address);
+
+                const proxyStakeTx = this.api.tx.proxy.proxy(userAddress, null, tx);
+                
+                const x = await proxyStakeTx.signAndSend(sessionSigner, (result) => {
+
+                    this.statusCallBack(
+                        result, 
+                        () => {
+                            this.alert.success("SUCCESSFUL TRANSACTION", {style: this.alertStyle});
+
+                            whenSuccess();
+                            resolve();
+                        }, 
+                        false
+                    )
+                });
+
+                return;
+            }
+
+            stake_tx.withAccount(this.account?.address!, { signer });
+
+            const result = await stake_tx.signAndSend();
+
+            
+            const response = await result.response();
+
+            this.alert.success("SUCCESSFUL TRANSACTION", {style: this.alertStyle});
+
+            whenSuccess();
+            resolve();
+        });
+    }
+
+    public async unstake(payload: UnstakeRequest, whenSuccess: () => void, sessionSigner?: KeyringPair, voucherId?: HexString, userAddress?: HexString) {
         if (!this.validateAccount()) {
             throw new Error("Invalid account")
         }
 
-        this.signer(this.api.tx.balances.transferKeepAlive(this.stash, payload.amount) as any, () => {
-            this.alert.success("SUCCESSFUL TRANSACTION", {style: this.alertStyle});
-            whenSuccess();
+        const {signer} = await web3FromSource(this.accounts[0]?.meta.source as string);
 
-            const requestMode: RequestMode = "cors";
-
-            const requestOptions = {
-                method: "POST",
-                mode: requestMode,
-                headers: { 
-                    "Access-Control-Allow-Origin": "*",
-                    "Content-Type": "application/json" 
-                },
-                body: JSON.stringify(payload),
-            };
-
-            fetch(this.BASE_URL + "/guardian/stake", requestOptions);
-        });
-    }
-
-    public async unstake(payload: UnstakeRequest, gas: bigint, whenSuccess: () => void) {
-        const approve = this.tokenClient.vft.approve(
-            this.liquidityClient.programId!, 
-            payload.amount
-        );
-
-        const approveGas = await approve.withAccount(this.account?.decodedAddress!).transactionFee();
-        const approveTx = approve.withGas(approveGas).extrinsic as any;
-
-        await this.signer(approveTx, async () => {
-            this.alert.success("SUCCESSFUL TRANSACTION", {style: this.alertStyle})
-            whenSuccess();
+        if (!sessionSigner) {
+            const approve_tx = this.tokenClient.vft.approve(
+                this.liquidityClient.programId!, 
+                payload.amount
+            );
             
-
-            const requestOptions = {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            };
-
-            await fetch(this.BASE_URL + "/guardian/unstake", requestOptions);
-        }, true)
-    }
-
-    public withdraw(payload: WithdrawRequest) {
-        const requestOptions = {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
+            if (!sessionSigner) {
+                approve_tx.withAccount(this.account?.address!, {signer});
+            } else {
+                approve_tx.withAccount(sessionSigner);
+            }
+    
+            await approve_tx.calculateGas(false, 10);
+    
+            const result_vft = await approve_tx.signAndSend();
+    
+            const vft_response = await result_vft.response();
+    
+        } else {
+            await this.aproveTokensProxy(sessionSigner, userAddress!, payload.amount);
         }
 
-        fetch(this.BASE_URL + "/guardian/withdraw", requestOptions);
+        const unstake_tx = this.liquidityClient.liquidity.unstake(
+            payload.amount,
+            payload.sessionForAccount
+        );
+
+        if (!sessionSigner) {
+            unstake_tx.withAccount(this.account?.address!, {signer});
+        } else {
+            unstake_tx.withAccount(sessionSigner);
+            unstake_tx.withVoucher(voucherId!);
+        }
+
+        await unstake_tx.calculateGas(false, 20);
+
+        const result_staking = await unstake_tx.signAndSend();
+
+        const staking_response = await result_staking.response();
+
+        this.alert.success("SUCCESSFUL TRANSACTION", {style: this.alertStyle});
+
+        whenSuccess();
+    }
+
+    public async withdraw(payload: WithdrawRequest, sessionSigner: KeyringPair, voucherId?: HexString) {
+        if (!this.validateAccount()) {
+            throw new Error("Invalid account")
+        }
+
+        const {signer} = await web3FromSource(this.accounts[0]?.meta.source as string);
+
+        const withdraw_tx = this.liquidityClient.liquidity.withdraw(
+            payload.id,
+            payload.user
+        );
+
+        await withdraw_tx.calculateGas(true, 20);
+
+        if (sessionSigner) {
+            withdraw_tx.withAccount(sessionSigner);
+            withdraw_tx.withVoucher(voucherId!);
+        } else {
+            withdraw_tx.withAccount(this.account?.address!, { signer });
+        }
+
+        const result_withdraw = await withdraw_tx.signAndSend();
+        const staking_response = await result_withdraw.response();
+
+        this.alert.success("SUCCESSFUL TRANSACTION", {style: this.alertStyle});
+
+        // const requestOptions = {
+        //     method: "POST",
+        //     headers: { "Content-Type": "application/json" },
+        //     body: JSON.stringify(payload),
+        // }
+
+        // fetch(this.BASE_URL + "testnet/guardian/withdraw", requestOptions);
     }
 
     public async stakeGas(payload: any) {
         return await this.liquidityClient.liquidity.stake(
-            payload.amount,
-            payload.gvaraAmount, 
-            this.account?.decodedAddress!, 
-            payload.date
-        ).withAccount(this.account?.decodedAddress!).transactionFee();
+            // payload.amount,
+            // payload.gvaraAmount, 
+            // this.account?.decodedAddress!, 
+            // payload.date
+            null
+        )
+        .withAccount(this.account?.decodedAddress!)
+        .withValue(payload.amount)
+        .transactionFee();
     }
 
     public async unstakeGas(amount: any) {
@@ -164,9 +345,9 @@ export class SmartContract {
         return await this.liquidityClient.liquidity.unstake(
             payload.amount, 
             payload.reward, 
-            payload.user, 
-            payload.date, 
-            payload.liberationEra
+            // payload.user, 
+            // payload.date, 
+            // payload.liberationEra
         ).withAccount(this.account?.decodedAddress!).transactionFee();
     }
 
@@ -191,6 +372,15 @@ export class SmartContract {
         return Number(await this.liquidityClient.liquidity.tokenValue());
     }
 
+    private async sessionSigner(sessionSigner: KeyringPair, userAddress: HexString, extrinsic: any, continueWith: () => void) {
+        const proxyTx = this.api.tx.proxy.proxy(userAddress, null, extrinsic);
+
+        await proxyTx.signAndSend(
+            sessionSigner,
+            (result: ISubmittableResult) => this.statusCallBack(result, continueWith, false)
+        );
+    }
+
     private async signer(message: any, continueWith: () => void, isUnstake: boolean = false) {
         const injector = await web3FromSource(this.accounts[0]?.meta.source as string);
 
@@ -201,7 +391,7 @@ export class SmartContract {
         );
     }
 
-    private statusCallBack({status}: ISubmittableResult, continueWith: () => void, isUnstake: boolean) {
+    private statusCallBack({status, events}: ISubmittableResult, continueWith: () => void, isUnstake: boolean) {
         this.setupBeforeUnloadListener();
         if (status.isFinalized) {
             this.removeBeforeUnloadListener();
@@ -209,9 +399,20 @@ export class SmartContract {
         }else if (status.isDropped || status.isInvalid || status.isUsurped) {
             this.removeBeforeUnloadListener();
             this.errorAlert("Transaction failed");
-        }else{
+        } else{
 
         }
+
+        events.forEach(({ event }) => {
+            const { section, method, data } = event;
+
+            if (section === "balances" && method === "Withdraw") {
+                const payer = data[0].toString(); // La cuenta que pagó el fee
+                const amount = data[1].toHuman(); // Cuánto pagó
+
+                console.log(`⚠️ Fee paid by: ${payer} with amount: ${amount}`);
+            }
+        });
     }
 
     private validateAccount(): boolean {
@@ -219,5 +420,9 @@ export class SmartContract {
         return this.accounts.some(
             (visibleAccount: Account) => visibleAccount.address === localAccount?.address
         )
+    }
+
+    get getContractAddress(): `0x${string}` {
+        return this.contractAddress
     }
 }
