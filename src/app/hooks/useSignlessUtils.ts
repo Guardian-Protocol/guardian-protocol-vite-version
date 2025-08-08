@@ -125,7 +125,7 @@ export const useSignlessUtils = (contract: SmartContract, session?: Session | nu
             
             const newPair = await createNewPair();
 
-            const response = await axios.post("http://localhost:3001/vouchers/create-voucher", {
+            const response = await axios.post(`${import.meta.env.VITE_BACKEND_URL}vouchers/create-voucher`, {
                 userAddress: decodeAddress(newPair.address),
                 contractsAddress: [programId] 
             });

@@ -55,7 +55,7 @@ export const useVoucherUtils = (sponsorName: string, sponsorMnemonic: string) =>
           const expired = await voucherExpired(voucherId, address);
 
           if (expired || addTokens) {
-            await axios.post("http://localhost:3001/vouchers/update-voucher", {
+            await axios.post(`${import.meta.env.VITE_BACKEND_URL}vouchers/update-voucher`, {
               userAddress: address,
               voucherAddress: voucherId
             });
