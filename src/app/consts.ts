@@ -6,7 +6,7 @@ interface ContractData {
   metadata: string
 }
 
-export const SIGNLESS_STORAGE_KEY = 'signless';
+export const SIGNLESS_STORAGE_KEY = 'guardiansignless';
 
 export const ACCOUNT_ID_LOCAL_STORAGE_KEY = 'account';
 

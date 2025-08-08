@@ -41,7 +41,8 @@ export function Modal({ heading, children, onClose }: Props) {
   };
 
   return (
-    <motion.dialog
+    <div className={styles.modalContainer}>
+      <motion.dialog
       initial="enter"
       animate="center"
       exit="exit"
@@ -57,9 +58,9 @@ export function Modal({ heading, children, onClose }: Props) {
             <CrossIcon />
           </Button>
         </div>
-
         {children}
       </motion.div>
     </motion.dialog>
+    </div>
   );
 }

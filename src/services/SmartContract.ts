@@ -76,7 +76,8 @@ export class SmartContract {
         event.preventDefault();
     }
 
-    public loadingAlert = (message: string) => {
+    public loadingAlert = (message: any) => {
+        // return this.alert.loading(message, { style: this.alertStyle });
         return this.alert.loading(message, { style: this.alertStyle });
     };
 
@@ -88,23 +89,23 @@ export class SmartContract {
         this.alert.remove(id);
     }
 
-    public async transferTokensToSessionFromMenemonic(sponsorName: string, sponsorMnemonic: string, sessionAddress: string) {
+    public async transferTokensToSessionFromUserTokens(sessionAccount: KeyringPair, userAddress: string) {
         return new Promise<void>(async resolve => {
-            const { seed } = GearKeyring.generateSeed(sponsorMnemonic);
-            const keyring = await GearKeyring.fromSeed(seed, sponsorName);
+            const transfetTx = this.api.tx.balances.transferKeepAlive(sessionAccount.address, 1_000_000_000_000);
+            const proxyTx = this.api.tx.proxy.proxy(userAddress, null, transfetTx);
 
-            const transfetTx = this.api.tx.balances.transferKeepAlive(sessionAddress, 2_000_000_000_000);
-            await transfetTx.signAndSend(keyring, (result) => {
+            await proxyTx.signAndSend(sessionAccount, (result) => {
                 this.statusCallBack(
-                    result, 
+                    result,
                     () => {
                         resolve();
-                    }, 
+                    },
                     false
                 );
-            });
+            })
         });
     }
+
 
     public async checkSession(sessionSigner: KeyringPair, userAddress: HexString) {
         const sessions = await this.liquidityClient.session.sessionForTheAccount(userAddress, userAddress);
@@ -116,12 +117,11 @@ export class SmartContract {
 
     public async createSession(sessionSigner: KeyringPair, userAddress: HexString) {
         return new Promise<void>(async (resolve) => {
-            // const transferTx = this.api.tx.balances.transferKeepAlive(sessionSigner.address, 12_000_000_000_000);
             const sessionAddress = decodeAddress(sessionSigner.address);
 
             const signatureData : SignatureData = {
                 key: sessionAddress,
-                duration: 1800001,
+                duration: 604_800_000,
                 allowed_actions: ["stake", "unstake", "withdraw"]
             }
 
@@ -130,14 +130,12 @@ export class SmartContract {
                 null
             );
 
-            await sessionTx.calculateGas(true, 10);
+            await sessionTx.calculateGas(true, 20);
 
             const tx = sessionTx.extrinsic;
 
-            // const proxyTransferTx = this.api.tx.proxy.proxy(userAddress, null, transferTx);
             const proxySessionTx = this.api.tx.proxy.proxy(userAddress, null, tx);
 
-            // const batch = this.api.tx.utility.batch([proxyTransferTx, proxySessionTx]);
             const batch = this.api.tx.utility.batch([proxySessionTx]);
             await batch.signAndSend(sessionSigner, (result) => {
                 this.statusCallBack(
@@ -178,7 +176,6 @@ export class SmartContract {
     }
 
 
-    // TODO: cambiar esta parte ya que no puede llamar a signer
     public async stake(payload: StakeRequest, whenSuccess: () => void, sessionSigner?: KeyringPair, userAddress?: HexString, sponsorName?: string, sponsorMnemonic?: string) {     
         return new Promise<void>(async resolve => {   
             if (!this.validateAccount()) {
@@ -199,17 +196,14 @@ export class SmartContract {
             if (sessionSigner && userAddress) {
                 stake_tx.withAccount(sessionSigner.address);
                 const tx = stake_tx.extrinsic;
-                await this.transferTokensToSessionFromMenemonic(sponsorName!, sponsorMnemonic!, sessionSigner.address);
 
                 const proxyStakeTx = this.api.tx.proxy.proxy(userAddress, null, tx);
                 
-                const x = await proxyStakeTx.signAndSend(sessionSigner, (result) => {
+                await proxyStakeTx.signAndSend(sessionSigner, (result) => {
 
                     this.statusCallBack(
                         result, 
                         () => {
-                            this.alert.success("SUCCESSFUL TRANSACTION", {style: this.alertStyle});
-
                             whenSuccess();
                             resolve();
                         }, 
@@ -227,8 +221,6 @@ export class SmartContract {
             
             const response = await result.response();
 
-            this.alert.success("SUCCESSFUL TRANSACTION", {style: this.alertStyle});
-
             whenSuccess();
             resolve();
         });
@@ -240,6 +232,7 @@ export class SmartContract {
         }
 
         const {signer} = await web3FromSource(this.accounts[0]?.meta.source as string);
+
 
         if (!sessionSigner) {
             const approve_tx = this.tokenClient.vft.approve(
@@ -281,7 +274,7 @@ export class SmartContract {
 
         const staking_response = await result_staking.response();
 
-        this.alert.success("SUCCESSFUL TRANSACTION", {style: this.alertStyle});
+        console.log(staking_response);
 
         whenSuccess();
     }
@@ -310,23 +303,11 @@ export class SmartContract {
         const result_withdraw = await withdraw_tx.signAndSend();
         const staking_response = await result_withdraw.response();
 
-        this.alert.success("SUCCESSFUL TRANSACTION", {style: this.alertStyle});
-
-        // const requestOptions = {
-        //     method: "POST",
-        //     headers: { "Content-Type": "application/json" },
-        //     body: JSON.stringify(payload),
-        // }
-
-        // fetch(this.BASE_URL + "testnet/guardian/withdraw", requestOptions);
+        console.log(staking_response);
     }
 
     public async stakeGas(payload: any) {
         return await this.liquidityClient.liquidity.stake(
-            // payload.amount,
-            // payload.gvaraAmount, 
-            // this.account?.decodedAddress!, 
-            // payload.date
             null
         )
         .withAccount(this.account?.decodedAddress!)
@@ -345,9 +326,6 @@ export class SmartContract {
         return await this.liquidityClient.liquidity.unstake(
             payload.amount, 
             payload.reward, 
-            // payload.user, 
-            // payload.date, 
-            // payload.liberationEra
         ).withAccount(this.account?.decodedAddress!).transactionFee();
     }
 
@@ -407,8 +385,8 @@ export class SmartContract {
             const { section, method, data } = event;
 
             if (section === "balances" && method === "Withdraw") {
-                const payer = data[0].toString(); // La cuenta que pagó el fee
-                const amount = data[1].toHuman(); // Cuánto pagó
+                const payer = data[0].toString();
+                const amount = data[1].toHuman(); 
 
                 console.log(`⚠️ Fee paid by: ${payer} with amount: ${amount}`);
             }

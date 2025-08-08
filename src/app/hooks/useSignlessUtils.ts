@@ -16,6 +16,7 @@ import { useVoucherUtils } from './useVoucherUtils';
 import { web3FromSource } from '@polkadot/extension-dapp';
 import { addProxy } from '../utils';
 import { SmartContract } from '@/services/SmartContract';
+import axios from "axios";
 
 function useLatestVoucher(programId: HexString, address: string | undefined) {
   const decodedAddress = address ? decodeAddress(address) : '';
@@ -81,8 +82,31 @@ export const useSignlessUtils = (contract: SmartContract, session?: Session | nu
 
     const [isLoading, setIsLoading] = useState(false);
     const isActive = Boolean(pair);
+
+    const checkProxyBalance = (sessionSigner: KeyringPair, userAddress: HexString) => {
+        return new Promise<void>(async (resolve, reject) => {
+            if (!isApiReady) {
+                return;
+            }
+            const {data} = await api.query.system.account(sessionSigner.address);
+            const sessionAddressBalance = Number(data.free.toHuman().split(",").join(""));
+            const minBalance = 2_000_000_000_000;
+
+            if (sessionAddressBalance > minBalance) {
+                resolve();
+                return;
+            }
+
+            await contract.transferTokensToSessionFromUserTokens(
+                sessionSigner,
+                userAddress
+            );
+
+            resolve();
+        });
+    }
     
-    const createNewSession = async (userAddress: HexString): Promise<[KeyringPair, `0x${string}`]> => {
+    const createNewSession = async (userAddress: HexString, setSubtitleName: any, setProgress: any): Promise<[KeyringPair, `0x${string}`]> => {
         return new Promise(async (resolve, reject) => {
             if (!isApiReady) {
                 reject("Api is not ready");
@@ -95,23 +119,21 @@ export const useSignlessUtils = (contract: SmartContract, session?: Session | nu
             }
 
             let { signer } = await web3FromSource(account?.meta.source!);
+
+            setSubtitleName("Creating new voucher ...");
+            setProgress(15);
             
             const newPair = await createNewPair();
 
-            await contract.transferTokensToSessionFromMenemonic(sponsorName, sponsorMnemonic, newPair.address); 
+            const response = await axios.post("http://localhost:3001/vouchers/create-voucher", {
+                userAddress: decodeAddress(newPair.address),
+                contractsAddress: [programId] 
+            });
 
-            // Balance
-            // const {data} = await api.query.system.account(newPair.address);
-            // console.log(data.free.toHuman());
+            const voucherId = response.data.voucherId;
 
-            const voucherId = await generateNewVoucher(
-                [programId],
-                decodeAddress(newPair.address),
-                10,
-                1_200,
-                () => {},
-                () => {}
-            );
+            setSubtitleName("Setting proxy account ...");
+            setProgress(30);
 
             await addProxy(
                 api,
@@ -121,35 +143,14 @@ export const useSignlessUtils = (contract: SmartContract, session?: Session | nu
                 "Any",
             );
 
+            setSubtitleName("Creating new session ...");
+            setProgress(45);
+
             await contract.createSession(newPair, userAddress);
 
-            // const {data: balance} = await api.query.system.account(newPair.address);
-
             savePair(newPair, userAddress);
-
-
             resolve([newPair, voucherId]);
         });
-    }
-
-    const checkVoucher = async () => {
-        if (!pair) {
-            console.error("pair is not set");
-            return;
-        }
-
-        if (!voucher) {
-            console.error("voucher is not set");
-            return;
-        }
-
-        await checkVoucherForUpdates(
-            decodeAddress(pair.address),
-            voucher.id,
-            10,
-            1_200,
-            3
-        );
     }
 
     const createNewPair = async (): Promise<KeyringPair> => {
@@ -229,6 +230,7 @@ export const useSignlessUtils = (contract: SmartContract, session?: Session | nu
         storageVoucher,
         storageVoucherBalance,
         createNewPair,
-        createNewSession
+        createNewSession,
+        checkProxyBalance
     }
 }

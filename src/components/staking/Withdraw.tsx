@@ -5,6 +5,7 @@ import {
     Image,
     Box,
     Flex,
+    Progress
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { SmartContract } from "@/services/SmartContract";
@@ -19,9 +20,8 @@ import {
     useVoucherUtils,
     useSignlessUtils 
 } from "@/app/hooks";
-import { getStorage } from "@/app/utils";
-
-
+import { getStorage, sleep } from "@/app/utils";
+import { Modal } from "../shared/modal";
 
 type WithdrawProps = {
     contractCalls: SmartContract;
@@ -36,6 +36,9 @@ export function Withdraw({contractCalls, account}: WithdrawProps) {
     const [currentEra, setCurrentEra] = useState<number>(0);
     const [isHistoryEmpty, setIsHistoryEmpty] = useState<boolean>(false);
     const [update, setUpdate] = useState<boolean>(false);
+    const [progressStatus, setProgressStatus] = useState(0);
+    const [modalSubtitle, setModalSubtitle] = useState("Generating vouchers...");
+    const [modalOpen, setIsModalOpen] = useState(false);
 
     const {
         pair,
@@ -52,8 +55,14 @@ export function Withdraw({contractCalls, account}: WithdrawProps) {
 
         let storagePair = getStorage()[account.address];
 
+        setIsModalOpen(true);
+
         if (!storagePair) {
-            pair_data = await createNewSession(account.decodedAddress);
+            pair_data = await createNewSession(
+                account.decodedAddress,
+                setModalSubtitle,
+                setProgressStatus
+            );
         } else {
             const pairToUse = !pair ? unlockPair(account.decodedAddress) : pair;
             const voucherId = storageVoucher 
@@ -68,14 +77,17 @@ export function Withdraw({contractCalls, account}: WithdrawProps) {
             await contractCalls.checkSession(pairToUse, account.decodedAddress);
         }
 
+        setModalSubtitle("Updating voucher ...");
+        setProgressStatus(55);
+
         await checkVoucherForUpdates(
             decodeAddress(pair_data[0]?.address!),
             pair_data[1]!,
-            10,
-            1_200,
-            3,
-            () => {},
-            () => {}
+            // 10,
+            // 1_200,
+            // 3,
+            // () => {},
+            // () => {}
         );
 
         const payload: WithdrawRequest = {
@@ -85,11 +97,23 @@ export function Withdraw({contractCalls, account}: WithdrawProps) {
             amount: amount
         }
 
+        setModalSubtitle("Withdrawn tokens ...");
+        setProgressStatus(75);
+
         await contractCalls.withdraw(
             payload,
             pair_data[0]!,
             pair_data[1]!
         );
+
+        setModalSubtitle("Finished!");
+        setProgressStatus(100);
+
+        await sleep(2);
+        
+        setModalSubtitle("");
+        setProgressStatus(0);
+        setIsModalOpen(false);
 
         setTimeout(() => {
             setUpdate(!update);
@@ -100,13 +124,13 @@ export function Withdraw({contractCalls, account}: WithdrawProps) {
 
     useEffect(() => {
         contractCalls.getUnstakeHistory().then((history) => {
-
             setUnestakeHistory(history);
         });
 
         contractCalls.getCurrentEra().then((era) => {
             setCurrentEra(era);
         });
+
     }, [contractCalls, balance]);
 
     useEffect(() => {}, [update]);

@@ -121,14 +121,22 @@ export async function addProxy(
     proxyType: 'Any' | 'Staking' | 'Governance' | 'NonTransfer',
     delay: number = 0
 ): Promise<void> {
-    const tx = api.tx.proxy.addProxy(proxyAddress, proxyType, delay);
+    return new Promise(async (resolve, reject) => {
+      const proxyTx = api.tx.proxy.addProxy(proxyAddress, proxyType, delay);
+      const transfetTx = api.tx.balances.transferKeepAlive(proxyAddress, 2_000_000_000_000);
+      const batch = api.tx.utility.batch([proxyTx, transfetTx]);
 
-    await tx.signAndSend(userAddress, { signer }, ({ status, dispatchError }: SubmittableResult) => {
-      if (dispatchError) {
-          console.error('Fail while adding the proxy:', dispatchError.toString());
-      } else if (status.isInBlock) {
-          console.log('Proxy added in block:', status.asInBlock.toHex());
-      }
+
+      await batch.signAndSend(userAddress, { signer }, ({ status, dispatchError }: SubmittableResult) => {
+        if (dispatchError) {
+            console.error('Fail while adding the proxy:', dispatchError.toString());
+            reject(`Fail while adding the proxy: ${dispatchError.toString()}`)
+        } else if (status.isInBlock) {
+            console.log('Proxy added in block:', status.asInBlock.toHex());
+        } else if (status.isFinalized) {
+          resolve();
+        }
+      });
     });
 }
 

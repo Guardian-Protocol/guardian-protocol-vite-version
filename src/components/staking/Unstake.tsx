@@ -11,6 +11,7 @@ import {
     Grid,
     Flex,
     Box,
+    Progress
 } from "@chakra-ui/react";
 import {useCallback, useEffect, useState} from "react";
 import { SmartContract } from "@/services/SmartContract";
@@ -27,7 +28,8 @@ import {
     useVoucherUtils,
     useSignlessUtils 
 } from "@/app/hooks";
-import { getStorage } from "@/app/utils";
+import { getStorage, sleep } from "@/app/utils";
+import { Modal } from "../shared/modal";
 
 
 type UnstakeProps = {
@@ -60,13 +62,16 @@ export function Unstake({
     const [isButtonEnabled, setIsButtonEnabled] = useState(true);
     const [refresh, setRefresh] = useState(false);
     const [gas, setGas] = useState(0);
-    const{ api, isApiReady } = useApi();
+    const [progressStatus, setProgressStatus] = useState(0);
+    const [modalSubtitle, setModalSubtitle] = useState("Generating vouchers...");
+    const [modalOpen, setIsModalOpen] = useState(false);
 
     const {
         pair,
         storageVoucher,
         createNewSession,
-        unlockPair
+        unlockPair,
+        checkProxyBalance
     } = useSignlessUtils(contract, null);
 
     const { checkVoucherForUpdates, vouchersInContract } = useVoucherUtils(sponsorName, sponsorMnemonic);
@@ -105,7 +110,6 @@ export function Unstake({
     };
 
     const unstakeVara = async () => {
-        
         if (!isButtonEnabled) return false;
 
         if (Number(amount) > gvaraValance || Number(amount) <= 0) {
@@ -115,14 +119,19 @@ export function Unstake({
         setRefresh(true);
 
         setIsButtonEnabled(false);
-        let id = contract.loadingAlert("Unstaking VARA");
+
+        setIsModalOpen(true);
 
         let pair_data: [KeyringPair | undefined, `0x${string}` | undefined] = [undefined, undefined];
 
         let storagePair = getStorage()[account.address];
 
         if (!storagePair) {
-            pair_data = await createNewSession(account.decodedAddress);
+            pair_data = await createNewSession(
+                account.decodedAddress,
+                setModalSubtitle,
+                setProgressStatus
+            );
         } else {
             const pairToUse = !pair ? unlockPair(account.decodedAddress) : pair;
 
@@ -138,14 +147,20 @@ export function Unstake({
             await contract.checkSession(pairToUse, account.decodedAddress);
         }
 
+        setModalSubtitle("Updating voucher ...");
+        setProgressStatus(55);
+
         await checkVoucherForUpdates(
             decodeAddress(pair_data[0]?.address!),
             pair_data[1]!,
-            10,
-            1_200,
-            3,
-            () => {},
-            () => {}
+        );
+
+        setModalSubtitle("Updating proxy account ...");
+        setProgressStatus(65);
+
+        await checkProxyBalance(
+            pair_data[0]!,
+            account.decodedAddress
         );
 
         const payload: UnstakeRequest = {
@@ -154,6 +169,9 @@ export function Unstake({
         }
 
         try {
+            setModalSubtitle("Unstaking tokens ...");
+            setProgressStatus(75);
+
             await contract.unstake(
                 payload, 
                 () => {
@@ -161,8 +179,8 @@ export function Unstake({
                     setIsButtonEnabled(true);
                     setAmount("0");
                     setRewardAfter(0);
-                    contract.closeAlert(id);
-
+                    setModalSubtitle("Finished!");
+                    setProgressStatus(100);
                     setTimeout(() => {
                         setBalanceChanged(!balanceChanged);
                     }, 3000)
@@ -171,13 +189,18 @@ export function Unstake({
                 pair_data[1]!,
                 account.decodedAddress
             );
-        } catch {
+        } catch(e) {
+            console.log(e)
             setIsButtonEnabled(true);
             setAmount("0");
             setRewardAfter(0);
             contract.errorAlert("Operation cancelled")
-            contract.closeAlert(id);
         }
+
+        await sleep(2);
+        setModalSubtitle("");
+        setProgressStatus(0);
+        setIsModalOpen(false);
     }
 
     const getBalance = useCallback(async () => {
@@ -311,6 +334,40 @@ export function Unstake({
                     </Tbody>
                 </Table>
             </TableContainer>
+            {
+                modalOpen && (
+                    <Modal 
+                        heading="Unstaking VARA"
+                        onClose={() => {    }}
+                    >
+                        <h3
+                            style={{
+                                color: "white",
+                                fontSize: "18px",
+                                textAlign: "center"
+                            }}
+                        >
+                            {modalSubtitle}
+                        </h3>
+                        <br />
+                        <Progress
+                            borderRadius={20}
+                            background={"orange"}
+                            value={progressStatus}
+                            sx={{
+                                // Aquí se aplica el estilo al elemento interno que cambia su ancho
+                                '& [role="progressbar"]': {
+                                    transition: 'width 1.5s ease-in-out',
+                                },
+                            }}
+                            colorScheme="green"
+                            isAnimated
+                            hasStripe
+                        />
+                        
+                    </Modal>
+                )
+            }
         </TabPanel>
     )
 }

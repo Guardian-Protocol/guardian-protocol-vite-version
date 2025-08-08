@@ -7,7 +7,7 @@ import {
     useApi,
     useBalanceFormat
 } from '@gear-js/react-hooks';
-
+import axios from "axios";
 
 
 export const useVoucherUtils = (sponsorName: string, sponsorMnemonic: string) => {
@@ -46,39 +46,26 @@ export const useVoucherUtils = (sponsorName: string, sponsorMnemonic: string) =>
     const checkVoucherForUpdates = async (
       address: HexString,
       voucherId: HexString, 
-      tokensToAdd: number,
-      newExpirationTimeInBlocks: number,
-      minBalance: number = 2,
-      onSuccess?: () => void,
-      onFail?: () => void,
-      onLoading?: () => void,
     ): Promise<void> => {
       return new Promise(async (resolve, reject) => {
-        if (await voucherExpired(voucherId, address)) {
-          await renewVoucherInBlocks(
-            voucherId, 
-            address, 
-            newExpirationTimeInBlocks,
-            onSuccess,
-            onFail,
-            onLoading
-          )
+        try {
+          const currentVoucherBalance = await voucherBalance(voucherId);
+          // const addTokens = !((currentVoucherBalance) <= (ONE_TVARA_VALUE * 4));
+          const addTokens = currentVoucherBalance <= 4;
+          const expired = await voucherExpired(voucherId, address);
+
+          if (expired || addTokens) {
+            await axios.post("http://localhost:3001/vouchers/update-voucher", {
+              userAddress: address,
+              voucherAddress: voucherId
+            });
+          }
+
+          resolve();
+        } catch(e) {
+          console.error(e);
+          reject(e);
         }
-
-        const totalBalanceOfVoucher = await voucherBalance(voucherId);
-
-        if (totalBalanceOfVoucher < minBalance) {
-          await addTokensToVoucher(
-            voucherId,
-            address,
-            tokensToAdd,
-            onSuccess,
-            onFail,
-            onLoading
-          );
-        }
-
-        resolve();
       })
     }
 

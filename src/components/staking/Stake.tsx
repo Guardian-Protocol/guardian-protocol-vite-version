@@ -8,6 +8,7 @@ import {
     Button,
     Grid,
     Flex,
+    Progress
 } from "@chakra-ui/react";
 import { useEffect, useState } from "react";
 import { SmartContract } from "@/services/SmartContract";
@@ -20,12 +21,15 @@ import { useAlert } from "@gear-js/react-hooks";
 import { KeyringPair } from '@polkadot/keyring/types';
 import { useApi } from "@gear-js/react-hooks"; 
 import { decodeAddress } from "@gear-js/api";
-import { getStorage } from "@/app/utils";
+import { getProxies, getStorage, removeProxy, sleep } from "@/app/utils";
 
 import { 
     useVoucherUtils,
     useSignlessUtils 
 } from "@/app/hooks";
+import { web3FromSource } from "@polkadot/extension-dapp";
+import { Modal } from "../shared/modal";
+import { ProgressBar } from "../shared/progressbar";
 
 type StakeProps = {
     account: Account;
@@ -39,6 +43,7 @@ type StakeProps = {
 
 type formatedBalance = { value: string; unit: string } | undefined;
 
+
 export function Stake({account, isModalOpen, openModal, closeModal, contract, balanceChanged, setBalanceChanged }: StakeProps) {
     const sponsorName = import.meta.env.VITE_SPONSOR_NAME;
     const sponsorMnemonic = import.meta.env.VITE_SPONSOR_MNEMONIC;
@@ -50,13 +55,16 @@ export function Stake({account, isModalOpen, openModal, closeModal, contract, ba
     const [valueAfterToken, setValueAfterToken] = useState(0);
     const [stakeAmount, setStakeAmount] = useState("0");
     const [gas, setGas] = useState(0);
-    const alert = useAlert();
+    const [progressStatus, setProgressStatus] = useState(0);
+    const [modalSubtitle, setModalSubtitle] = useState("Generating vouchers...");
+    const [modalOpen, setIsModalOpen] = useState(false);
 
     const {
         pair,
         storageVoucher,
         createNewSession,
-        unlockPair
+        unlockPair,
+        checkProxyBalance
     } = useSignlessUtils(contract, null);
 
     const { checkVoucherForUpdates, vouchersInContract } = useVoucherUtils(sponsorName, sponsorMnemonic);
@@ -79,27 +87,25 @@ export function Stake({account, isModalOpen, openModal, closeModal, contract, ba
         }
 
         setIsButtonEnabled(false);
-        let id = contract.loadingAlert("Staking VARA - Dont leave the page");
-        // let id = alert.loading("Staking VARA - Dont leave the page", { style: contract.alertStyle });
-        // let id = alert.loading(<p>"Staking VARA - Dont leave the page"</p>, { style: contract.alertStyle });
-        
-        const stakeValue = contract.toPlank(valueAfterToken);
+        setIsModalOpen(true);
+
         const amount = contract.toPlank(Number(stakeAmount));
 
         const payload: StakeRequest = {
             amount: amount,
             sessionForAccount: null
-            // tokenAmount: stakeValue,
-            // user: contract.currentUser()?.decodedAddress!!,
-            // date: formatDate(new Date()),
         }
 
         let pair_data: [KeyringPair | undefined, `0x${string}` | undefined] = [undefined, undefined];
 
         let storagePair = getStorage()[account.address];
-
+        
         if (!storagePair) {
-            pair_data = await createNewSession(account.decodedAddress);
+            pair_data = await createNewSession(
+                account.decodedAddress,
+                setModalSubtitle,
+                setProgressStatus
+            );
         } else {
             const pairToUse = !pair ? unlockPair(account.decodedAddress) : pair;
             const voucherId = storageVoucher 
@@ -114,23 +120,32 @@ export function Stake({account, isModalOpen, openModal, closeModal, contract, ba
             await contract.checkSession(pairToUse, account.decodedAddress);
         }
 
+        setModalSubtitle("Updating voucher ...");
+        setProgressStatus(55);
+
         await checkVoucherForUpdates(
             decodeAddress(pair_data[0]?.address!),
             pair_data[1]!,
-            10,
-            1_200,
-            3,
-            () => {},
-            () => {}
+        );
+
+        setModalSubtitle("Updating proxy account ...");
+        setProgressStatus(65);
+
+        await checkProxyBalance(
+            pair_data[0]!,
+            account.decodedAddress
         );
 
         try {
+            setModalSubtitle("Sending tokens for Staking ...");
+            setProgressStatus(75);
+
             await contract.stake(
                 payload, 
                 () => {
                     setIsButtonEnabled(true);
-                    // contract.closeAlert(id);
-                    alert.remove(id);
+                    setModalSubtitle("Finished!");
+                    setProgressStatus(100);
                     setStakeAmount("0");
                     setValueAfterToken(0);
 
@@ -143,10 +158,17 @@ export function Stake({account, isModalOpen, openModal, closeModal, contract, ba
                 sponsorName,
                 sponsorMnemonic
             );
-        } catch {
-            contract.errorAlert("Operation cancelled")
-            contract.closeAlert(id);
+
+            await sleep(2);
+            setModalSubtitle("");
+            setProgressStatus(0);
+            setIsModalOpen(false);
+        } catch(e) {
+            console.log(e);
+            contract.errorAlert("Operation cancelled");
             setIsButtonEnabled(true);
+            setIsModalOpen(false);
+            setProgressStatus(0);
             setStakeAmount("0");
             setValueAfterToken(0);
         }
@@ -301,6 +323,73 @@ export function Stake({account, isModalOpen, openModal, closeModal, contract, ba
                     </Tbody>
                 </Table>
             </TableContainer>
+            {
+                modalOpen && (
+                    <Modal 
+                        heading="Staking VARA"
+                        onClose={() => {    }}
+                    >
+                        <h3
+                            style={{
+                                color: "white",
+                                fontSize: "18px",
+                                textAlign: "center"
+                            }}
+                        >
+                            {modalSubtitle}
+                        </h3>
+                        <br />
+                        <Progress
+                            borderRadius={20}
+                            background={"orange"}
+                            value={progressStatus}
+                            sx={{
+                                // Aquí se aplica el estilo al elemento interno que cambia su ancho
+                                '& [role="progressbar"]': {
+                                    transition: 'width 1.5s ease-in-out',
+                                },
+                            }}
+                            colorScheme="green"
+                            isAnimated
+                            hasStripe
+                        />
+                        
+                    </Modal>
+                )
+            }
         </TabPanel>
     )
 }
+
+
+
+        // 2581.8645
+        // 2578.4949 
+        // BALANCE USUARIO
+
+        // 1,834,046,242,900
+        // 1,669,366,793,600
+        // 1,504,687,344,300
+        // 1,340,001,245,600
+        // BALANCE ACTUAL
+
+       
+
+        
+
+        
+
+
+        // 2051315867312000
+        // 2,051,315,867,312,000
+        // 2048918999837300
+        // 2,048,918,999,837,300
+
+        // 2,396,867,474,700
+
+
+
+        // 2078415965222700
+        // 2,078,415,965,222,700
+        // 2074061917191200
+        // 2,074,061,917,191,200
