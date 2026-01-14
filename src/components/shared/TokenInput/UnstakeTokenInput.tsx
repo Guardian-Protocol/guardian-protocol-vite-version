@@ -1,6 +1,8 @@
 import { Button, Flex, Grid, Image, Input, InputGroup, InputLeftElement, InputRightElement, Td, Text, Tr } from "@chakra-ui/react";
 import Advertencia from '@/assets/images/icons/advertencia.svg';
 import { useEffect, useState } from "react";
+import { formatNumber } from "@/utils";
+import BigNumber from "bignumber.js";
 
 type formatedBalance = { value: string; unit: string } | undefined;
 
@@ -8,11 +10,11 @@ type StakeTokenInputProps = {
     tokenLogo: string;
     amount: string;
     isAmountInvalid: boolean;
-    valueAfterToken: number;
+    valueAfterToken: BigNumber;
     handleInputChange: any;
     handleMaxButtonPressed: any;
-    tokenValue: number;
-    gas: number;
+    tokenValue: BigNumber;
+    gas: BigNumber;
     setGas: any
 }
 
@@ -113,7 +115,7 @@ export function UnstakeTokenInput({
                         <Image src={Advertencia} boxSize="30px" mr={2} />
                         <Text                                 
                             display={{base: 'block', md: 'flex'}}
-                            whiteSpace={{base: 'pre-line', md: 'nowrap'}}>The gas fee will be: {gas / 100000000000} VARA currently</Text>
+                            whiteSpace={{base: 'pre-line', md: 'nowrap'}}>The gas fee will be: {gas.dividedBy(BigNumber(100000000000)).toString()} VARA currently</Text>
                     </Flex>
                 </Td>
             </Grid>
@@ -127,7 +129,7 @@ export function UnstakeTokenInput({
                 >
                     <Flex align="center" justifyContent="flex-end">
                         <Image src={Advertencia} boxSize="30px" mr={2} />
-                        <Text> 1 VARA = {tokenValue} VARA</Text>
+                        <Text> 1 gVARA = {formatNumber(tokenValue.toString(), 12, 4)} VARA</Text>
                     </Flex>
                 </Td>
             </Grid>
@@ -154,7 +156,7 @@ export function UnstakeTokenInput({
                             fontSize="18px"
                             w={{base: '100%', md: 'auto'}}
                         >
-                            {valueAfterToken} gVARA
+                            {formatNumber(valueAfterToken.toString(), 12, 4)} VARA
                         </Td>
                     </Tr>
                 </>
@@ -179,7 +181,7 @@ export function UnstakeTokenInput({
                             fontSize="18px"
                             w={{base: '100%', md: 'auto'}}
                         >
-                            {valueAfterToken} gVARA
+                            {formatNumber(valueAfterToken.toString(), 12, 4)} VARA
                     </Td>
                 </Grid>
                 <Tr style={{ visibility: "hidden" }}>

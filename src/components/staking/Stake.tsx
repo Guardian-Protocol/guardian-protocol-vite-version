@@ -30,6 +30,9 @@ import {
 import { web3FromSource } from "@polkadot/extension-dapp";
 import { Modal } from "../shared/modal";
 import { ProgressBar } from "../shared/progressbar";
+import { formatNumber } from "@/utils";
+
+import BigNumber from "bignumber.js";
 
 type StakeProps = {
     account: Account;
@@ -52,11 +55,11 @@ export function Stake({account, isModalOpen, openModal, closeModal, contract, ba
     const [lockedBalance, setLockedBalance] = useState(0)
     const [isButtonEnabled, setIsButtonEnabled] = useState(true);
     const [isAmountInvalid, setIsAmountInvalid] = useState(false);
-    const [valueAfterToken, setValueAfterToken] = useState(0);
+    const [valueAfterToken, setValueAfterToken] = useState(new BigNumber(0));
     const [stakeAmount, setStakeAmount] = useState("0");
-    const [gas, setGas] = useState(0);
+    const [gas, setGas] = useState<BigNumber>(new BigNumber(0));
     const [progressStatus, setProgressStatus] = useState(0);
-    const [modalSubtitle, setModalSubtitle] = useState("Generating vouchers...");
+    const [modalSubtitle, setModalSubtitle] = useState("Preparing transaction...");//useState("Generating vouchers...");
     const [modalOpen, setIsModalOpen] = useState(false);
 
     const {
@@ -96,49 +99,53 @@ export function Stake({account, isModalOpen, openModal, closeModal, contract, ba
             sessionForAccount: null
         }
 
-        let pair_data: [KeyringPair | undefined, `0x${string}` | undefined] = [undefined, undefined];
+        // let pair_data: [KeyringPair | undefined, `0x${string}` | undefined] = [undefined, undefined];
 
-        let storagePair = getStorage()[account.address];
+        // let storagePair = getStorage()[account.address];
         
-        if (!storagePair) {
-            pair_data = await createNewSession(
-                account.decodedAddress,
-                setModalSubtitle,
-                setProgressStatus
-            );
-        } else {
-            const pairToUse = !pair ? unlockPair(account.decodedAddress) : pair;
-            const voucherId = storageVoucher 
-                ? storageVoucher.id 
-                : (await vouchersInContract(
-                    contract.getContractAddress,
-                    decodeAddress(pairToUse.address)
-                  ))[0];
+        // if (!storagePair) {
+        //     pair_data = await createNewSession(
+        //         account.decodedAddress,
+        //         setModalSubtitle,
+        //         setProgressStatus
+        //     );
+        // } else {
+        //     const pairToUse = !pair ? unlockPair(account.decodedAddress) : pair;
+        //     const voucherId = storageVoucher 
+        //         ? storageVoucher.id 
+        //         : (await vouchersInContract(
+        //             contract.getContractAddress,
+        //             decodeAddress(pairToUse.address)
+        //           ))[0];
 
-            pair_data = [ pairToUse, voucherId ];
+        //     pair_data = [ pairToUse, voucherId ];
 
-            await contract.checkSession(pairToUse, account.decodedAddress);
-        }
+        //     await contract.checkSession(pairToUse, account.decodedAddress);
+        // }
 
-        setModalSubtitle("Updating voucher ...");
+        setProgressStatus(0);
+        await sleep(1);
+
+        // setModalSubtitle("Updating voucher ...");
+        setModalSubtitle("Sending tokens for staking ...");
         setProgressStatus(55);
 
-        await checkVoucherForUpdates(
-            decodeAddress(pair_data[0]?.address!),
-            pair_data[1]!,
-        );
+        // await checkVoucherForUpdates(
+        //     decodeAddress(pair_data[0]?.address!),
+        //     pair_data[1]!,
+        // );
 
-        setModalSubtitle("Updating proxy account ...");
-        setProgressStatus(65);
+        // setModalSubtitle("Updating proxy account ...");
+        // setProgressStatus(65);
 
-        await checkProxyBalance(
-            pair_data[0]!,
-            account.decodedAddress
-        );
+        // await checkProxyBalance(
+        //     pair_data[0]!,
+        //     account.decodedAddress
+        // );
 
         try {
-            setModalSubtitle("Sending tokens for Staking ...");
-            setProgressStatus(75);
+            // setModalSubtitle("Sending tokens for Staking ...");
+            // setProgressStatus(75);
 
             await contract.stake(
                 payload, 
@@ -147,16 +154,16 @@ export function Stake({account, isModalOpen, openModal, closeModal, contract, ba
                     setModalSubtitle("Finished!");
                     setProgressStatus(100);
                     setStakeAmount("0");
-                    setValueAfterToken(0);
+                    setValueAfterToken(new BigNumber(0));
 
                     setTimeout(() => {
                         setBalanceChanged(!balanceChanged);
                     }, 3500);
                 },
-                pair_data[0],
-                account.decodedAddress,
-                sponsorName,
-                sponsorMnemonic
+                // pair_data[0],
+                // account.decodedAddress,
+                // sponsorName,
+                // sponsorMnemonic
             );
 
             await sleep(2);
@@ -170,7 +177,7 @@ export function Stake({account, isModalOpen, openModal, closeModal, contract, ba
             setIsModalOpen(false);
             setProgressStatus(0);
             setStakeAmount("0");
-            setValueAfterToken(0);
+            setValueAfterToken(new BigNumber(0));
         }
     }
 
@@ -263,7 +270,8 @@ export function Stake({account, isModalOpen, openModal, closeModal, contract, ba
                                 textAlign="end"
                                 style={{ color: "white" }}
                             >
-                                {contract.toFixed4(lockedBalance)}
+                                {formatNumber(lockedBalance.toString(), 6, 4)}
+                                {/* {contract.toFixed4(lockedBalance)} */}
                             </Td>
                         </Grid>
 
@@ -344,7 +352,6 @@ export function Stake({account, isModalOpen, openModal, closeModal, contract, ba
                             background={"orange"}
                             value={progressStatus}
                             sx={{
-                                // Aquí se aplica el estilo al elemento interno que cambia su ancho
                                 '& [role="progressbar"]': {
                                     transition: 'width 1.5s ease-in-out',
                                 },
@@ -360,36 +367,3 @@ export function Stake({account, isModalOpen, openModal, closeModal, contract, ba
         </TabPanel>
     )
 }
-
-
-
-        // 2581.8645
-        // 2578.4949 
-        // BALANCE USUARIO
-
-        // 1,834,046,242,900
-        // 1,669,366,793,600
-        // 1,504,687,344,300
-        // 1,340,001,245,600
-        // BALANCE ACTUAL
-
-       
-
-        
-
-        
-
-
-        // 2051315867312000
-        // 2,051,315,867,312,000
-        // 2048918999837300
-        // 2,048,918,999,837,300
-
-        // 2,396,867,474,700
-
-
-
-        // 2078415965222700
-        // 2,078,415,965,222,700
-        // 2074061917191200
-        // 2,074,061,917,191,200

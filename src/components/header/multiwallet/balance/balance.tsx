@@ -11,6 +11,7 @@ import {Image} from "@chakra-ui/react";
 import VaraLogo from "@/assets/images/icons/ava-vara-black.svg";
 import {useCallback, useEffect, useState} from "react";
 import {SmartContract} from "@/services/SmartContract";
+import { formatNumber } from '@/utils';
 
 const Balance = ({balanceChanged}: any) => {
   const { isApiReady, api } = useApi();
@@ -19,18 +20,19 @@ const Balance = ({balanceChanged}: any) => {
   const { balance } = useBalance(account?.address);
   const alert = useAlert();
   const { getFormattedBalance } = useBalanceFormat();
-  const [gvaraBalance, setGvaraBalance] = useState(0);
+  const [gvaraBalance, setGvaraBalance] = useState("0");
 
     const getBalance = useCallback(() => {
         const contract = new SmartContract(api!, account!, accounts, alert)
 
         contract.balanceOf().then((balance) => {
-            setGvaraBalance(contract.toFixed4(balance));
+            setGvaraBalance(formatNumber(balance.toString(), 6, 4));
+            // setGvaraBalance(contract.toFixed4(balance));
         })
     }, [api, account, accounts, alert])
 
     useEffect(() => {
-        getBalance()
+        getBalance();
     }, [getBalance, balance, gvaraBalance, balanceChanged])
 
     useEffect(() => {}, [balanceChanged]);

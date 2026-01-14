@@ -37,7 +37,7 @@ export function Withdraw({contractCalls, account}: WithdrawProps) {
     const [isHistoryEmpty, setIsHistoryEmpty] = useState<boolean>(false);
     const [update, setUpdate] = useState<boolean>(false);
     const [progressStatus, setProgressStatus] = useState(0);
-    const [modalSubtitle, setModalSubtitle] = useState("Generating vouchers...");
+    const [modalSubtitle, setModalSubtitle] = useState("Withdrawn tokens ...");
     const [modalOpen, setIsModalOpen] = useState(false);
 
     const {
@@ -51,44 +51,48 @@ export function Withdraw({contractCalls, account}: WithdrawProps) {
     const { checkVoucherForUpdates, vouchersInContract } = useVoucherUtils(sponsorName, sponsorMnemonic);
 
     const handleWithdraw = async (unestakeId: number, amount: number, liberationEra: number, index: number) => {
-        let pair_data: [KeyringPair | undefined, `0x${string}` | undefined] = [undefined, undefined];
+        // let pair_data: [KeyringPair | undefined, `0x${string}` | undefined] = [undefined, undefined];
 
-        let storagePair = getStorage()[account.address];
+        // let storagePair = getStorage()[account.address];
 
         setIsModalOpen(true);
 
-        if (!storagePair) {
-            pair_data = await createNewSession(
-                account.decodedAddress,
-                setModalSubtitle,
-                setProgressStatus
-            );
-        } else {
-            const pairToUse = !pair ? unlockPair(account.decodedAddress) : pair;
-            const voucherId = storageVoucher 
-                ? storageVoucher.id 
-                : (await vouchersInContract(
-                    contractCalls.getContractAddress,
-                    decodeAddress(pairToUse.address)
-                  ))[0];
+        // if (!storagePair) {
+        //     pair_data = await createNewSession(
+        //         account.decodedAddress,
+        //         setModalSubtitle,
+        //         setProgressStatus
+        //     );
+        // } else {
+        //     const pairToUse = !pair ? unlockPair(account.decodedAddress) : pair;
+        //     const voucherId = storageVoucher 
+        //         ? storageVoucher.id 
+        //         : (await vouchersInContract(
+        //             contractCalls.getContractAddress,
+        //             decodeAddress(pairToUse.address)
+        //           ))[0];
 
-            pair_data = [ pairToUse, voucherId ];
+        //     pair_data = [ pairToUse, voucherId ];
 
-            await contractCalls.checkSession(pairToUse, account.decodedAddress);
-        }
+        //     await contractCalls.checkSession(pairToUse, account.decodedAddress);
+        // }
 
-        setModalSubtitle("Updating voucher ...");
+        setProgressStatus(0);
+        await sleep(1);
+
+        // setModalSubtitle("Updating voucher ...");
+        setModalSubtitle("Withdrawn tokens ...");
         setProgressStatus(55);
 
-        await checkVoucherForUpdates(
-            decodeAddress(pair_data[0]?.address!),
-            pair_data[1]!,
-            // 10,
-            // 1_200,
-            // 3,
-            // () => {},
-            // () => {}
-        );
+        // await checkVoucherForUpdates(
+        //     decodeAddress(pair_data[0]?.address!),
+        //     pair_data[1]!,
+        //     // 10,
+        //     // 1_200,
+        //     // 3,
+        //     // () => {},
+        //     // () => {}
+        // );
 
         const payload: WithdrawRequest = {
             user: contractCalls.currentUser()?.decodedAddress!,
@@ -97,13 +101,14 @@ export function Withdraw({contractCalls, account}: WithdrawProps) {
             amount: amount
         }
 
-        setModalSubtitle("Withdrawn tokens ...");
-        setProgressStatus(75);
+
+        console.log(payload);
+
 
         await contractCalls.withdraw(
             payload,
-            pair_data[0]!,
-            pair_data[1]!
+            // pair_data[0]!,
+            // pair_data[1]!
         );
 
         setModalSubtitle("Finished!");
@@ -197,11 +202,13 @@ export function Withdraw({contractCalls, account}: WithdrawProps) {
                                     <Flex justifyContent={'space-around'} mt={{base:'30px', md: '0'}}>
                                         <Button
                                             onClick={() =>{
-                                                if (currentEra > history?.liberationEra) {
+                                                console.log(history);
+
+                                                if (currentEra > history?.liberation_era) {
                                                     handleWithdraw(
-                                                        history?.unestakeId, 
+                                                        history?.id, 
                                                         history?.amount, 
-                                                        history?.liberationEra,
+                                                        history?.liberation_era,
                                                         index
                                                     );
                                                 } else {
@@ -212,7 +219,7 @@ export function Withdraw({contractCalls, account}: WithdrawProps) {
                                             size="lg"
                                             style={{
                                                 color: "black",
-                                                background: (currentEra > history?.liberationEra) ? "#F8AD18" : "rgba(252,187,68,0.22)",
+                                                background: (currentEra > history?.liberation_era) ? "#F8AD18" : "rgba(252,187,68,0.22)",
                                                 width: "140px",
                                             }}
                                         >
@@ -225,6 +232,39 @@ export function Withdraw({contractCalls, account}: WithdrawProps) {
                     ))}
                 </Flex>
             </Box>
+            {
+                modalOpen && (
+                    <Modal 
+                        heading="Withdraw VARA"
+                        onClose={() => {    }}
+                    >
+                        <h3
+                            style={{
+                                color: "white",
+                                fontSize: "18px",
+                                textAlign: "center"
+                            }}
+                        >
+                            {modalSubtitle}
+                        </h3>
+                        <br />
+                        <Progress
+                            borderRadius={20}
+                            background={"orange"}
+                            value={progressStatus}
+                            sx={{
+                                '& [role="progressbar"]': {
+                                    transition: 'width 1.5s ease-in-out',
+                                },
+                            }}
+                            colorScheme="green"
+                            isAnimated
+                            hasStripe
+                        />
+                        
+                    </Modal>
+                )
+            }
         </TabPanel>
     )
 }

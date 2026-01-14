@@ -7,6 +7,7 @@ interface ImportMetaEnv {
   readonly VITE_SPONSOR_NAME: string;
   readonly VITE_SPONSOR_MNEMONIC: string;
   readonly VITE_BACKEND_URL: string;
+  readonly VITE_FT_DECIMALS: string;
 }
 
 interface ImportMeta {

@@ -64,7 +64,7 @@ export function History({contractCalls}: HistoryProps) {
                                     </Flex>
                                     <Flex direction="column" alignItems="flex-end">
                                         <Flex align="center">
-                                            <Text fontSize={{base: 'md', md: 'lg'}} fontWeight="bold">{history.amount / contractCalls.PLANK}</Text>
+                                            <Text fontSize={{base: 'md', md: 'lg'}} fontWeight="bold">{history.t_type === "stake" ? history.amount / contractCalls.PLANK : history.amount / (10 ** Number(import.meta.env.VITE_FT_DECIMALS))}</Text>
                                             <Image src={VaraLogo} boxSize="40px" ml={2} />
                                         </Flex>
                                     </Flex>

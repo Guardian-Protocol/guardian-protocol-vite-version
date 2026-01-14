@@ -7,65 +7,108 @@ declare global {
     ms_per_block: number | string | bigint;
   }
 
+  export interface FixedStakingTime {
+    last_era_registered: number | string | bigint;
+    era_started_at_block: number | string | bigint;
+    era_duration_in_blocks: number | string | bigint;
+  }
+
   export type LiquidityEvent = 
-    | { staked: number | string | bigint }
-    | { unstaked: number | string | bigint }
-    | { withdrawn: number | string | bigint }
-    | { newTokenValue: number | string | bigint }
-    | { adminAdded: null }
-    | { adminRemoved: null };
+    | { Staked: number | string | bigint }
+    | { Unstaked: number | string | bigint }
+    | { Withdrawn: number | string | bigint }
+    | { NewTokenValue: number | string | bigint }
+    | { NominationsAdded: null }
+    | { RewardsCollected: null }
+    | { RewardsAccountChanged: null }
+    | { AdminAdded: null }
+    | { AdminRemoved: null };
 
   export type LiquidError = 
-    | { notEnoughBalance: null }
-    | { unstakeNotFound: null }
-    | { withdrawNotFound: null }
-    | { withdrawIsNotReady: null }
-    | { zeroAmount: null }
-    | { zeroEra: null }
-    | { zeroId: null }
-    | { zeroAddress: null }
-    | { notAdmin: null }
-    | { adminAlreadyExists: null }
-    | { fTContractError: null }
-    | { storeError: null }
-    | { cantRemoveSelf: null }
-    | { adminNotFound: null }
-    | { lastAdmin: null }
-    | { stakingError: StakingError };
+    | { NotEnoughBalance: null }
+    | { UnstakeNotFound: null }
+    | { WithdrawNotFound: null }
+    | { WithdrawIsNotReady: null }
+    | { ZeroAmount: null }
+    | { ZeroEra: null }
+    | { ZeroId: null }
+    | { ZeroAddress: null }
+    | { NotAdmin: null }
+    | { AdminAlreadyExists: null }
+    | { FTContractError: null }
+    | { StoreError: null }
+    | { CantRemoveSelf: null }
+    | { AdminNotFound: null }
+    | { LastAdmin: null }
+    | { StakingError: StakingError };
 
   export type StakingError = 
-    | { contractEraIsNotSynchronized: null }
-    | { actionOnlyForAdmins: null }
-    | { valueIsZero: null }
-    | { valueLessThanOne: null }
-    | { errorInFirstStageMessage: string }
-    | { errorInUpstreamProgram: null }
-    | { replyError: { payload: string; reason: string } }
-    | { tokensReadyToWithdraw: null }
-    | { tokensAlreadyWithdrawn: null }
-    | { tokensAlreadyRebonded: null }
-    | { unbondIdDoesNotExists: null }
-    | { bondIdOverflow: null }
-    | { unbondIdAlreadyWithdrawn: number | string | bigint }
-    | { unbondIdWasRebonded: number | string | bigint }
-    | { unbondIdOverflow: null }
-    | { unbondIdCanNotBeWithdraw: { can_withdraw_at_block: number | string | bigint; current_block: number | string | bigint } }
-    | { rebondIdOverflow: null }
-    | { userBondOverflow: null }
-    | { userBondUnderflow: null }
-    | { userUnbondOverflow: null }
-    | { userUnbondUnderflow: null }
-    | { userInsufficientBond: null }
-    | { userHasNoBonds: null }
-    | { userHasNoUnbonds: null }
-    | { nominateAtLeastOneAddress: null }
-    | { nominationsAmountError: { max: number; received: number } };
+    | { ContractEraIsNotSynchronized: null }
+    | { ActionOnlyForAdmins: null }
+    | { ValueIsZero: null }
+    | { ValueLessThanOne: null }
+    | { ErrorInFirstStageMessage: string }
+    | { ErrorInUpstreamProgram: null }
+    | { ReplyError: { payload: string; reason: string } }
+    | { TokensReadyToWithdraw: null }
+    | { TokensAlreadyWithdrawn: null }
+    | { TokensAlreadyRebonded: null }
+    | { UnbondIdDoesNotExists: null }
+    | { BondIdOverflow: null }
+    | { UnbondIdAlreadyWithdrawn: number | string | bigint }
+    | { UnbondIdWasRebonded: number | string | bigint }
+    | { UnbondIdOverflow: null }
+    | { UnbondIdCanNotBeWithdraw: { can_withdraw_at_block: number | string | bigint; current_block: number | string | bigint } }
+    | { RebondIdOverflow: null }
+    | { UserBondOverflow: null }
+    | { UserBondUnderflow: null }
+    | { UserUnbondOverflow: null }
+    | { UserUnbondUnderflow: null }
+    | { UserInsufficientBond: null }
+    | { UserHasNoBonds: null }
+    | { UserHasNoUnbonds: null }
+    | { NominateAtLeastOneAddress: null }
+    | { NominationsAmountError: { max: number; received: number } };
+
+  export interface BondDataIo {
+    data: BondData;
+    id: number | string | bigint;
+  }
+
+  export interface BondData {
+    amount: number | string | bigint;
+    bonded_at_timestamp: number | string | bigint;
+    bonded_at_block: number;
+    bonded_at_era: number | string | bigint;
+  }
+
+  export type StakingHistory = 
+    | { Bond: { amount: number | string | bigint; bond_at_block: number | string | bigint; bond_at_timestamp: number | string | bigint } }
+    | { Unbond: { amount: number | string | bigint; unbond_at_block: number | string | bigint; unbond_at_timestamp: number | string | bigint } }
+    | { Rebond: { amount: number | string | bigint; rebond_at_block: number | string | bigint; rebond_at_timestamp: number | string | bigint } }
+    | { Withdraw: { amount: number | string | bigint; withdraw_at_block: number | string | bigint; withdraw_at_timestamp: number | string | bigint } };
 
   export interface Transaction {
     id: number | string | bigint;
     t_type: string;
     amount: number | string | bigint;
     date: string;
+  }
+
+  export interface UnbondDataIo {
+    data: UnbondData;
+    id: number | string | bigint;
+  }
+
+  export interface UnbondData {
+    amount: number | string | bigint;
+    unbond_at_timestamp: number | string | bigint;
+    unbond_at_block: number | string | bigint;
+    unbond_at_era: number | string | bigint;
+    can_withdraw_at_block: number | string | bigint;
+    can_withdraw_at_era: number | string | bigint;
+    withdrawn: boolean;
+    rebonded: boolean;
   }
 
   export interface Unstake {
@@ -82,7 +125,7 @@ declare global {
     allowed_actions: Array<ActionsForSession>;
   }
 
-  export type ActionsForSession = "stake" | "unstake" | "withdraw";
+  export type ActionsForSession = "Stake" | "Unstake" | "Withdraw";
 
   export interface SessionData {
     key: ActorId;

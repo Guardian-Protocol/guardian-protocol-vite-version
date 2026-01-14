@@ -3182,7 +3182,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@gear-js/api@npm:0.42.0, @gear-js/api@npm:^0.42.0":
+"@gear-js/api@npm:0.44.2":
+  version: 0.44.2
+  resolution: "@gear-js/api@npm:0.44.2"
+  peerDependencies:
+    "@polkadot/api": ^16.4.1
+    "@polkadot/wasm-crypto": ^7.5.1
+    rxjs: ^7.8.2
+  checksum: 91359c155d0e58e9c95f74135fb2ca48a3eff778fe02a4fefb8dcecd219427489698fe7c4ef7c76734589f1e729bd4942ff29d016235b22f6849349859197880
+  languageName: node
+  linkType: hard
+
+"@gear-js/api@npm:^0.42.0":
   version: 0.42.0
   resolution: "@gear-js/api@npm:0.42.0"
   peerDependencies:
@@ -6891,6 +6902,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"bignumber.js@npm:9.3.1":
+  version: 9.3.1
+  resolution: "bignumber.js@npm:9.3.1"
+  checksum: 61342ba5fe1c10887f0ecf5be02ff6709271481aff48631f86b4d37d55a99b87ce441cfd54df3d16d10ee07ceab7e272fc0be430c657ffafbbbf7b7d631efb75
+  languageName: node
+  linkType: hard
+
 "binary-extensions@npm:^2.0.0":
   version: 2.3.0
   resolution: "binary-extensions@npm:2.3.0"
@@ -8956,7 +8974,7 @@ __metadata:
     "@chakra-ui/react": "npm:^2.8.2"
     "@emotion/react": "npm:^11.11.4"
     "@emotion/styled": "npm:^11.11.0"
-    "@gear-js/api": "npm:0.42.0"
+    "@gear-js/api": "npm:0.44.2"
     "@gear-js/react-hooks": "npm:0.10.7"
     "@gear-js/ui": "npm:0.5.23"
     "@gear-js/vara-ui": "npm:0.0.7"
@@ -8980,6 +8998,7 @@ __metadata:
     "@vitejs/plugin-react-swc": "npm:3.3.2"
     autoprefixer: "npm:10.4.14"
     axios: "npm:^1.11.0"
+    bignumber.js: "npm:9.3.1"
     buffer: "npm:6.0.3"
     class-variance-authority: "npm:0.6.1"
     clsx: "npm:1.2.1"
@@ -9000,7 +9019,7 @@ __metadata:
     react-icons: "npm:5.2.1"
     react-router-dom: "npm:6.22.2"
     react-transition-group: "npm:4.4.5"
-    sails-js: "npm:0.4.2"
+    sails-js: "npm:0.5.1"
     sailscalls: "github:Vara-Lab/SailsCalls"
     sass: "npm:1.62.0"
     simplebar-react: "npm:3.2.6"
@@ -11405,10 +11424,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"sails-js-types@npm:0.5.1":
+  version: 0.5.1
+  resolution: "sails-js-types@npm:0.5.1"
+  checksum: 945d99c74c3dfaa5ec9e3d7803750b1ad844a7653ec3667e7ef3e49e8739e9f487876c2c957ed5319a5ba57612220adb304dd22ce2c7b184b9ea8bd94ad5045f
+  languageName: node
+  linkType: hard
+
 "sails-js-types@npm:^0.4.2":
   version: 0.4.2
   resolution: "sails-js-types@npm:0.4.2"
   checksum: 37e64cd87b2f032f754ad785929cfd681aa51d2896ca935200ce2c22ed026a2c0a364b634f89ad6c6067d7f23acc26aa3276bb474b958ae107ed1ebc0ecfa441
+  languageName: node
+  linkType: hard
+
+"sails-js-util@npm:0.5.1":
+  version: 0.5.1
+  resolution: "sails-js-util@npm:0.5.1"
+  checksum: 95f794a97a4c24a8172f5ee5f539ffed2f5a047f63ee05c3ef2aaaf141d6c92f9a216f8d19394e13e8ceca1eb8de8280d10f306ec33a57dba6e11df6c5a4635f
   languageName: node
   linkType: hard
 
@@ -11432,6 +11465,23 @@ __metadata:
     sails-js-types:
       optional: true
   checksum: 8ef03d6ddac68aa61db06a1c5065b9d7ff4576647828d45d20beeff64085dad2f78a0601646fe708546b3ce992a4c06555a8bfff1e28b1e699389dfe0fd1b473
+  languageName: node
+  linkType: hard
+
+"sails-js@npm:0.5.1":
+  version: 0.5.1
+  resolution: "sails-js@npm:0.5.1"
+  dependencies:
+    sails-js-types: "npm:0.5.1"
+    sails-js-util: "npm:0.5.1"
+  peerDependencies:
+    "@gear-js/api": ^0.44.1
+    "@polkadot/api": ^16.4.1
+    "@polkadot/util": ^13.5.1
+  dependenciesMeta:
+    sails-js-types:
+      optional: true
+  checksum: 164761939feeed3fa411057d8b59e7ab09a470f7e5b8224de1a87cc8af11a24f98c81da969cd482c62e2da631e6f7e0eb05ea419278256f4a30913fee59476cc
   languageName: node
   linkType: hard
 

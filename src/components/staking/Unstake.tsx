@@ -30,6 +30,8 @@ import {
 } from "@/app/hooks";
 import { getStorage, sleep } from "@/app/utils";
 import { Modal } from "../shared/modal";
+import { formatNumber } from "@/utils";
+import BigNumber from "bignumber.js";
 
 
 type UnstakeProps = {
@@ -56,14 +58,14 @@ export function Unstake({
     const {balance} = useBalance(account?.address);
     const [amount, setAmount] = useState("0");
     const [gvaraValance, setGvaraBalance] = useState(0);
-    const [rewardAfter, setRewardAfter] = useState(0);
-    const [tokenValue, setTokenValue] = useState(0);
+    const [rewardAfter, setRewardAfter] = useState(new BigNumber(0));
+    const [tokenValue, setTokenValue] = useState(new BigNumber(0));
     const [isAmountInvalid, setIsAmountInvalid] = useState(false);
     const [isButtonEnabled, setIsButtonEnabled] = useState(true);
     const [refresh, setRefresh] = useState(false);
-    const [gas, setGas] = useState(0);
+    const [gas, setGas] = useState(new BigNumber(0));
     const [progressStatus, setProgressStatus] = useState(0);
-    const [modalSubtitle, setModalSubtitle] = useState("Generating vouchers...");
+    const [modalSubtitle, setModalSubtitle] = useState("Preparing transaction..."); //useState("Generating vouchers...");
     const [modalOpen, setIsModalOpen] = useState(false);
 
     const {
@@ -77,35 +79,71 @@ export function Unstake({
     const { checkVoucherForUpdates, vouchersInContract } = useVoucherUtils(sponsorName, sponsorMnemonic);
 
     const handleVaraUnstakeInputChange = async (event: any) => {
-        const { value } = event.target;
+        const { value: valueGet } = event.target;
+        const value: string = valueGet.trim();
+
         if (Number.isNaN(Number(value))) {
             return;
         }
 
-        if (value === "") {
-            setAmount("0")
-            setGas(0);
-        }
-
-        if (value.length === 0) {
+        if (value == "") {
             setAmount("0");
-            setRewardAfter(0);
-            setGas(0);
+            setRewardAfter(new BigNumber(0));
+            setGas(new BigNumber(0));
             return;
         }
 
+        const regex = /[^0-9]/;
+
+        if (regex.test(value)) {
+            return;
+        }
+
+        // if (value === "") {
+        //     setAmount("0");
+        //     setRewardAfter(0);
+        //     setGas(0);
+        //     return;
+        // }
+
+        if (value.length === 0) {
+            setAmount("0");
+            setRewardAfter(new BigNumber(0));
+            setGas(new BigNumber(0));
+            return;
+        }
+
+        // const reward = Math.floor(Number(gvaraValance / (10**Number(import.meta.env.VITE_FT_DECIMALS))));
+        const newAmount = new BigNumber(value);
+        const oneGvara = (new BigNumber(10)).pow(import.meta.env.VITE_FT_DECIMALS);
+        const tokenValue = new BigNumber(await contract.tokenValue());
+        const totalVara = newAmount.multipliedBy(tokenValue);
+
+        const reward = (newAmount.multipliedBy(tokenValue)).dividedBy(oneGvara);
+
+        if (reward < newAmount) {return}
+
         setIsAmountInvalid(false);
         setAmount((value.startsWith("0")) ? value.slice(1) : value);
-        setRewardAfter(contract.toFixed4(Number(value) * tokenValue));
-        setGas(Number(await contract.unstakeGas(contract.toPlank(Number(amount)))));
+        // setRewardAfter(contract.toFixed4(Number(value) * tokenValue));
+        setRewardAfter(totalVara);
+
+        // setGas(await contract.unstakeGas(contract.toPlank(Number(amount))));
+        const newGasValue = await contract.unstakeGas(newAmount.toString());
+        setGas(new BigNumber(newGasValue));
     }
 
     const maxAmountVaraUnstake = async () => {
         if (gvaraValance > 0) {
-            const reward = (Number(gvaraValance) * tokenValue);
-            setAmount(String(Number(gvaraValance)));
-            setRewardAfter(contract.toFixed4(reward));
-            setGas(Number(await contract.unstakeGas(contract.toPlank(Number(amount)))));
+            const oneGvara = (new BigNumber(10)).pow(import.meta.env.VITE_FT_DECIMALS);
+            const gvaraBalance = new BigNumber(gvaraValance);
+            const tokenValue = new BigNumber(await contract.tokenValue());
+            const reward = (gvaraBalance.multipliedBy(tokenValue)).dividedBy(oneGvara); 
+
+            setAmount(gvaraBalance.dividedBy(oneGvara).integerValue().toString());
+            setRewardAfter(reward);
+            const newGasValue = await contract.unstakeGas(amount);
+            setGas(new BigNumber(newGasValue));
         }
     };
 
@@ -122,55 +160,63 @@ export function Unstake({
 
         setIsModalOpen(true);
 
-        let pair_data: [KeyringPair | undefined, `0x${string}` | undefined] = [undefined, undefined];
+        // let pair_data: [KeyringPair | undefined, `0x${string}` | undefined] = [undefined, undefined];
 
-        let storagePair = getStorage()[account.address];
+        // let storagePair = getStorage()[account.address];
 
-        if (!storagePair) {
-            pair_data = await createNewSession(
-                account.decodedAddress,
-                setModalSubtitle,
-                setProgressStatus
-            );
-        } else {
-            const pairToUse = !pair ? unlockPair(account.decodedAddress) : pair;
+        // if (!storagePair) {
+        //     pair_data = await createNewSession(
+        //         account.decodedAddress,
+        //         setModalSubtitle,
+        //         setProgressStatus
+        //     );
+        // } else {
+        //     const pairToUse = !pair ? unlockPair(account.decodedAddress) : pair;
 
-            const voucherId = storageVoucher 
-                ? storageVoucher.id 
-                : (await vouchersInContract(
-                    contract.getContractAddress,
-                    decodeAddress(pairToUse.address)
-                  ))[0];
+        //     const voucherId = storageVoucher 
+        //         ? storageVoucher.id 
+        //         : (await vouchersInContract(
+        //             contract.getContractAddress,
+        //             decodeAddress(pairToUse.address)
+        //           ))[0];
 
-            pair_data = [ pairToUse, voucherId ];
+        //     pair_data = [ pairToUse, voucherId ];
 
-            await contract.checkSession(pairToUse, account.decodedAddress);
-        }
+        //     await contract.checkSession(pairToUse, account.decodedAddress);
+        // }
 
-        setModalSubtitle("Updating voucher ...");
+        setProgressStatus(0);
+        await sleep(1);
+
+        // setModalSubtitle("Updating voucher ...");
+        setModalSubtitle("Unstaking tokens ...");
         setProgressStatus(55);
 
-        await checkVoucherForUpdates(
-            decodeAddress(pair_data[0]?.address!),
-            pair_data[1]!,
-        );
+        // await checkVoucherForUpdates(
+        //     decodeAddress(pair_data[0]?.address!),
+        //     pair_data[1]!,
+        // );
 
-        setModalSubtitle("Updating proxy account ...");
-        setProgressStatus(65);
+        // setModalSubtitle("Updating proxy account ...");
+        // setProgressStatus(65);
 
-        await checkProxyBalance(
-            pair_data[0]!,
-            account.decodedAddress
-        );
+        // await checkProxyBalance(
+        //     pair_data[0]!,
+        //     account.decodedAddress
+        // );
+
+        const gVaraAmount = (10 ** Number(import.meta.env.VITE_FT_DECIMALS)) * Number(amount);
+
 
         const payload: UnstakeRequest = {
-            amount: contract.toPlank(Number(amount)),
-            sessionForAccount: account.decodedAddress
+            amount: gVaraAmount, // contract.toPlank(Number(amount)),
+            sessionForAccount: null //account.decodedAddress
         }
 
+
         try {
-            setModalSubtitle("Unstaking tokens ...");
-            setProgressStatus(75);
+            // setModalSubtitle("Unstaking tokens ...");
+            // setProgressStatus(75);
 
             await contract.unstake(
                 payload, 
@@ -178,22 +224,22 @@ export function Unstake({
                     setRefresh(false);
                     setIsButtonEnabled(true);
                     setAmount("0");
-                    setRewardAfter(0);
+                    setRewardAfter(new BigNumber(0));
                     setModalSubtitle("Finished!");
                     setProgressStatus(100);
                     setTimeout(() => {
                         setBalanceChanged(!balanceChanged);
                     }, 3000)
                 },
-                pair_data[0]!,
-                pair_data[1]!,
-                account.decodedAddress
+                // pair_data[0]!,
+                // pair_data[1]!,
+                // account.decodedAddress
             );
         } catch(e) {
             console.log(e)
             setIsButtonEnabled(true);
             setAmount("0");
-            setRewardAfter(0);
+            setRewardAfter(new BigNumber(0));
             contract.errorAlert("Operation cancelled")
         }
 
@@ -209,7 +255,7 @@ export function Unstake({
         });
 
         contract.tokenValue().then((value) => {
-            setTokenValue(value);
+            setTokenValue(new BigNumber(value));
         });
     }, [contract]);
 
@@ -251,7 +297,7 @@ export function Unstake({
                                 w={{base: '80%', md: 'auto'}}
                                 paddingTop={0}
                             >
-                                Available to unlock: {gvaraValance} gVARA
+                                Available to unlock: {formatNumber(gvaraValance.toString(), 6, 4)} gVARA
                             </Td>
                         </Flex>
 
@@ -355,7 +401,6 @@ export function Unstake({
                             background={"orange"}
                             value={progressStatus}
                             sx={{
-                                // Aquí se aplica el estilo al elemento interno que cambia su ancho
                                 '& [role="progressbar"]': {
                                     transition: 'width 1.5s ease-in-out',
                                 },

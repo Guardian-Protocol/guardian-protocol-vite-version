@@ -3,8 +3,9 @@ import {Account, AlertContainerFactory} from "@gear-js/react-hooks";
 import {web3FromSource} from "@polkadot/extension-dapp";
 import {ISubmittableResult} from "@polkadot/types/types";
 import React from "react";
-import { SailsProgram } from "./clients/liquidity/program";
-import { TokenProgram } from "./clients/token/lib";
+import { SailsProgram } from "./clients/liquidity/lib";
+// import { Sa } from "./clients/token/lib";
+import { SailsProgram as TokenProgram} from "./clients/token/lib";
 import { StakeRequest } from "./models/StateRequest";
 import { UnstakeRequest } from "./models/UnstakeRequest";
 import { WithdrawRequest } from "./models/WithdrawRequest";
@@ -13,7 +14,8 @@ import { KeyringPair } from '@polkadot/keyring/types';
 type address = `0x${string}`
 
 export class SmartContract {
-    public readonly PLANK: number = 1000000000000;
+    // public readonly PLANK: number = (10 ** Number(import.meta.env.VITE_FT_DECIMALS)); //1_000_000_000_000;
+    public readonly PLANK: number = 1_000_000_000_000;
 
     private api: GearApi;
     public alert: AlertContainerFactory;
@@ -108,7 +110,8 @@ export class SmartContract {
 
 
     public async checkSession(sessionSigner: KeyringPair, userAddress: HexString) {
-        const sessions = await this.liquidityClient.session.sessionForTheAccount(userAddress, userAddress);
+        const sessions = await this.liquidityClient.session.sessionForTheAccount(userAddress);
+        // const sessions = await this.liquidityClient.session.sessionForTheAccount(userAddress, userAddress);
 
         if (!sessions) {
             await this.createSession(sessionSigner, userAddress);
@@ -122,7 +125,7 @@ export class SmartContract {
             const signatureData : SignatureData = {
                 key: sessionAddress,
                 duration: 604_800_000,
-                allowed_actions: ["stake", "unstake", "withdraw"]
+                allowed_actions: ["Stake", "Unstake", "Withdraw"]
             }
 
             let sessionTx = this.liquidityClient.session.createSession(
@@ -177,7 +180,7 @@ export class SmartContract {
 
 
     public async stake(payload: StakeRequest, whenSuccess: () => void, sessionSigner?: KeyringPair, userAddress?: HexString, sponsorName?: string, sponsorMnemonic?: string) {     
-        return new Promise<void>(async resolve => {   
+        return new Promise<void>(async resolve => { 
             if (!this.validateAccount()) {
                 throw new Error("Invalid account");
             }
@@ -191,7 +194,6 @@ export class SmartContract {
 
             let stake_tx = this.liquidityClient.liquidity.stake(payload.sessionForAccount);
             stake_tx.withValue(BigInt(payload.amount));
-            stake_tx = await stake_tx.calculateGas(true, 20);
 
             if (sessionSigner && userAddress) {
                 stake_tx.withAccount(sessionSigner.address);
@@ -216,6 +218,8 @@ export class SmartContract {
 
             stake_tx.withAccount(this.account?.address!, { signer });
 
+            stake_tx = await stake_tx.calculateGas(true, 20);
+
             const result = await stake_tx.signAndSend();
 
             
@@ -234,39 +238,43 @@ export class SmartContract {
         const {signer} = await web3FromSource(this.accounts[0]?.meta.source as string);
 
 
-        if (!sessionSigner) {
-            const approve_tx = this.tokenClient.vft.approve(
-                this.liquidityClient.programId!, 
-                payload.amount
-            );
+        // if (!sessionSigner) {
+        //     const approve_tx = this.tokenClient.vft.approve(
+        //         this.liquidityClient.programId!, 
+        //         payload.amount
+        //     );
             
-            if (!sessionSigner) {
-                approve_tx.withAccount(this.account?.address!, {signer});
-            } else {
-                approve_tx.withAccount(sessionSigner);
-            }
+        //     if (!sessionSigner) {
+        //         approve_tx.withAccount(this.account?.address!, {signer});
+        //     } else {
+        //         approve_tx.withAccount(sessionSigner);
+        //     }
     
-            await approve_tx.calculateGas(false, 10);
+        //     await approve_tx.calculateGas(false, 10);
     
-            const result_vft = await approve_tx.signAndSend();
+        //     const result_vft = await approve_tx.signAndSend();
     
-            const vft_response = await result_vft.response();
+        //     const vft_response = await result_vft.response();
     
-        } else {
-            await this.aproveTokensProxy(sessionSigner, userAddress!, payload.amount);
-        }
+        // } else {
+        //     await this.aproveTokensProxy(sessionSigner, userAddress!, payload.amount);
+        // }
 
         const unstake_tx = this.liquidityClient.liquidity.unstake(
             payload.amount,
-            payload.sessionForAccount
+            // payload.sessionForAccount
+            null
         );
 
-        if (!sessionSigner) {
-            unstake_tx.withAccount(this.account?.address!, {signer});
-        } else {
-            unstake_tx.withAccount(sessionSigner);
-            unstake_tx.withVoucher(voucherId!);
-        }
+        unstake_tx.withAccount(this.account?.address!, {signer});
+
+
+        // if (!sessionSigner) {
+        //     unstake_tx.withAccount(this.account?.address!, {signer});
+        // } else {
+        //     unstake_tx.withAccount(sessionSigner);
+        //     unstake_tx.withVoucher(voucherId!);
+        // }
 
         await unstake_tx.calculateGas(false, 20);
 
@@ -274,24 +282,21 @@ export class SmartContract {
 
         const staking_response = await result_staking.response();
 
-        console.log(staking_response);
-
         whenSuccess();
     }
 
-    public async withdraw(payload: WithdrawRequest, sessionSigner: KeyringPair, voucherId?: HexString) {
+    public async withdraw(payload: WithdrawRequest, sessionSigner?: KeyringPair, voucherId?: HexString) {
         if (!this.validateAccount()) {
-            throw new Error("Invalid account")
+            throw new Error("Invalid account");
         }
 
         const {signer} = await web3FromSource(this.accounts[0]?.meta.source as string);
 
         const withdraw_tx = this.liquidityClient.liquidity.withdraw(
             payload.id,
-            payload.user
+            null
+            // payload.user
         );
-
-        await withdraw_tx.calculateGas(true, 20);
 
         if (sessionSigner) {
             withdraw_tx.withAccount(sessionSigner);
@@ -300,19 +305,23 @@ export class SmartContract {
             withdraw_tx.withAccount(this.account?.address!, { signer });
         }
 
+        await withdraw_tx.calculateGas(true, 20);
+
         const result_withdraw = await withdraw_tx.signAndSend();
         const staking_response = await result_withdraw.response();
 
-        console.log(staking_response);
+        return staking_response;
     }
 
-    public async stakeGas(payload: any) {
-        return await this.liquidityClient.liquidity.stake(
+    public async stakeGas(payload: any): Promise<BigInt> {
+        const totalGas = await this.liquidityClient.liquidity.stake(
             null
         )
         .withAccount(this.account?.decodedAddress!)
         .withValue(payload.amount)
         .transactionFee();
+
+        return totalGas;
     }
 
     public async unstakeGas(amount: any) {
@@ -330,11 +339,11 @@ export class SmartContract {
     }
 
     public async getHistory() {
-        return await this.liquidityClient.liquidity.transactionsOf(this.account?.decodedAddress!);
+        return await this.liquidityClient.liquidity.transactionsOf(this.account?.decodedAddress!).call();
     }
 
     public async getUnstakeHistory() {
-        return await this.liquidityClient.liquidity.unstakesOf(this.account?.decodedAddress!);
+        return await this.liquidityClient.liquidity.unstakesOf(this.account?.decodedAddress!).call();
     }
 
     public async getCurrentEra(): Promise<number> {
@@ -343,11 +352,18 @@ export class SmartContract {
     }
 
     public async balanceOf() {
-        return Number(await this.tokenClient.vft.balanceOf(this.account?.decodedAddress!)) / this.PLANK;
+        const balance = await this.tokenClient.vft.balanceOf(this.account?.decodedAddress!).call();
+        return Number(balance);
     }
 
     public async tokenValue() { 
-        return Number(await this.liquidityClient.liquidity.tokenValue());
+        return await this.liquidityClient.liquidity.tokenValue().call();
+    }
+
+    public async totalSupply() {
+        const totalSupply = await this.tokenClient.vft.totalSupply().call();
+
+        return Number(totalSupply);
     }
 
     private async sessionSigner(sessionSigner: KeyringPair, userAddress: HexString, extrinsic: any, continueWith: () => void) {
@@ -397,7 +413,7 @@ export class SmartContract {
         const localAccount = this.account;
         return this.accounts.some(
             (visibleAccount: Account) => visibleAccount.address === localAccount?.address
-        )
+        );
     }
 
     get getContractAddress(): `0x${string}` {
